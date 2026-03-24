@@ -43,11 +43,9 @@ public class PlayerController : MonoBehaviour
     // Corrutina per connectar-se al servidor Socket.io
     IEnumerator ConnectarSocket()
     {
-        // Crear el client Socket.io (canvia la URL segons el teu servidor)
-       client = new SocketIO("http://localhost:3000", new SocketIOOptions
-{
-    Transport = SocketIOClient.Transport.SocketIOTransport.WebSocket
-});
+        // CORRECCIÓ AQUÍ: Hem eliminat les claus i el punt i coma que sobraven
+        client = new SocketIO("http://localhost:3000");
+
         // Escoltar l'esdeveniment 'playerMoved' del servidor
         client.On("playerMoved", (data) =>
         {
@@ -112,7 +110,7 @@ public class PlayerController : MonoBehaviour
     {
         // Moviment del jugador usant Rigidbody2D i velocitat
         Vector2 moviment = new Vector2(inputX, inputY).normalized * velocitat;
-        rb.velocity = moviment;
+        rb.linearVelocity = moviment;
 
         // Si estem connectats i el jugador s'ha mogut, enviar la posició al servidor
         if (clientConnectat && (inputX != 0 || inputY != 0))
