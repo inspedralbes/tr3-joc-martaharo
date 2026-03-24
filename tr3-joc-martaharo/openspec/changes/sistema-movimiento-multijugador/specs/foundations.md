@@ -1,26 +1,26 @@
-# Foundations
+# Fonaments
 
-## Project Overview
+## Visió General del Projecte
 
-This project is a **cooperative 2D Pixel Art game** where two players must collaborate in real-time to escape an AI enemy and reach an exit zone together.
+Aquest projecte és un **joc cooperatiu 2D Pixel Art** on dos jugadors han de col·laborar en temps real per escapar d'un enemic IA i arribar a una zona de sortida junts.
 
-## Technology Stack
+## Stack Tecnològic
 
-- **Frontend (Unity)**: C# with Unity 2D rendering
-- **Backend (Server)**: Node.js with Socket.io
-- **Communication**: WebSockets for real-time synchronization
+- **Frontend (Unity)**: C# amb renderització 2D de Unity
+- **Backend (Servidor)**: Node.js amb Socket.io
+- **Comunicació**: WebSockets per a sincronització en temps real
 
-## Core Constraint
+## Restricció Principal
 
-The primary constraint is that **movement must be fluid and synchronized via WebSockets** between both players in the same room. This means:
-- Position updates must be sent in real-time
-- Latency should be minimized
-- Both players must see each other's movements without significant delay
+La restricció principal és que **el moviment ha de ser fluid i sincronitzat via WebSockets** entre ambdós jugadors a la mateixa sala. Això significa:
+- Les actualitzacions de posició s'han d'enviar en temps real
+- La latència s'ha de minimitzar
+- Ambdós jugadors han de veure els moviments de l'altre sense retard significatiu
 
-## Scope
+## Abast
 
-This specification covers:
-1. Player movement input handling (Arrow keys / WASD)
-2. Collision detection with walls
-3. Real-time position synchronization via Socket.io
-4. Server-side event handling for position updates
+Aquesta especificació cobreix:
+1. Gestió d'entrada del moviment del jugador (Tecles de fletxes / WASD)
+2. Detecció de col·lisions amb parets
+3. Sincronització de posició en temps real via Socket.io
+4. Gestió d'esdeveniments del costat del servidor per a actualitzacions de posició

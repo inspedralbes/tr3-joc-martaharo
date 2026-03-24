@@ -1,70 +1,70 @@
 ## Context
 
-The project is a cooperative 2D Pixel Art game where two players must escape an AI enemy in real-time. The current architecture has a Node.js server with Socket.io and a Unity client. The missing piece is the synchronized movement system that allows both players to see each other's positions in real-time.
+El projecte és un joc cooperatiu 2D Pixel Art on dos jugadors han d'escapar d'un enemic IA en temps real. L'arquitectura actual té un servidor Node.js amb Socket.io i un client Unity. La peça que falta és el sistema de moviment sincronitzat que permet a ambdós jugadors veure les posicions de l'altre en temps real.
 
-**Current State**:
-- Server has basic room management and Socket.io setup
-- Unity client has authentication and room management via HTTP
-- No real-time position synchronization exists
+**Estat Actual**:
+- El servidor té la gestió bàsica de sales i configuració de Socket.io
+- El client Unity té autenticació i gestió de sales via HTTP
+- No existeix sincronització de posició en temps real
 
-**Constraints**:
-- Movement must be fluid (high update frequency)
-- Synchronization via WebSockets only
-- Must work with existing room-based architecture
+**Restriccions**:
+- El moviment ha de ser fluid (alta freqüència d'actualització)
+- Sincronització via WebSockets només
+- Ha de treballar amb l'arquitectura de sales existent
 
-## Goals / Non-Goals
+## Objectius / No-Objectius
 
-**Goals:**
-- Implement player movement in Unity with keyboard input
-- Add collision detection with walls
-- Create bidirectional position synchronization via Socket.io
-- Test and verify real-time performance
+**Objectius**:
+- Implementar el moviment del jugador a Unity amb entrada de teclat
+- Afegir detecció de col·lisions amb parets
+- Crear sincronització bidireccional de posició via Socket.io
+- Testar i verificar el rendiment en temps real
 
-**Non-Goals:**
-- Enemy AI movement (out of scope for this change)
-- Victory/defeat conditions (out of scope for this change)
-- Persistent game state storage (out of scope for this change)
+**No-Objectius**:
+- Moviment de l'enemic IA (fora de l'abast d'aquest canvi)
+- Condicions de victòria/derrota (fora de l'abast d'aquest canvi)
+- Emmagatzematge persistent de l'estat del joc (fora de l'abast d'aquest canvi)
 
 ## Decisions
 
-### 1. Movement Implementation (Unity)
+### 1. Implementació del Moviment (Unity)
 
-**Decision**: Use `Rigidbody2D` for movement with velocity-based control.
+**Decisió**: Utilitzar `Rigidbody2D` per al moviment amb control basat en velocitat.
 
-**Rationale**: `Rigidbody2D` provides built-in physics integration and smooth movement. Using velocity is more reliable for network synchronization than directly modifying transform position.
+**Justificació**: `Rigidbody2D` proporciona integració de física integrada i moviment suau. Utilitzar velocitat és més fiable per a la sincronització de xarxa que modificar directament la posició del transform.
 
-**Alternative Considered**: Direct transform modification - Rejected because it doesn't integrate well with physics collisions.
+**Alternativa Considerada**: Modificació directa del transform - Rebutjada perquè no s'integra bé amb les col·lisions de física.
 
-### 2. Position Update Frequency
+### 2. Freqüència d'Actualització de Posició
 
-**Decision**: Send position updates on every physics frame update (FixedUpdate) rather than throttled intervals.
+**Decisió**: Enviar actualitzacions de posició a cada actualització de frame de física (FixedUpdate) en lloc d'intervals limitats.
 
-**Rationale**: For smooth movement, we need frequent updates. With only 2 players, network bandwidth is not a concern. Throttling would introduce visual lag.
+**Justificació**: Per a un moviment suau, necessitem actualitzacions freqüents. Amb només 2 jugadors, l'amplada de banda de xarxa no és un problema. La limitació introduiria lag visual.
 
-**Alternative Considered**: Throttle to 10 updates/second - Rejected for visual smoothness.
+**Alternativa Considerada**: Limitació a 10 actualitzacions/segon - Rebutjada per a la suavitat visual.
 
-### 3. Socket.io Event Naming
+### 3. Nomenclatura d'Esdeveniments Socket.io
 
-**Decision**: Use `updatePosition` (client→server) and `playerMoved` (server→clients).
+**Decisió**: Utilitzar `updatePosition` (client→servidor) i `playerMoved` (servidor→clients).
 
-**Rationale**: Clear naming that indicates direction. Matches existing socket events in the codebase.
+**Justificació**: Nomenclatura clara que indica direcció. Coincideix amb els esdeveniments de socket existents al codi base.
 
-### 4. Position Data Structure
+### 4. Estructura de Dades de Posició
 
-**Decision**: Send `{ x: number, y: number }` as a simple JSON object.
+**Decisió**: Enviar `{ x: number, y: number }` com a objecte JSON senzill.
 
-**Rationale**: Minimal overhead. Can extend to include rotation later if needed.
+**Justificació**: Overhead mínim. Es pot estendre per incloure rotació més tard si cal.
 
-## Risks / Trade-offs
+## Riscos / Trade-offs
 
-**[Risk] Network Latency** → Mitigation: For local testing, latency should be negligible. Will measure in Step 4.
+**[Risc] Latència de Xarxa** → Mitigació: Per a proves locals, la latència hauria de ser insignificant. Es mesurarà al Pas 4.
 
-**[Risk] Both players choosing same character** → Mitigation: Server assigns character IDs (Bird_Blue, Bird_White) based on join order.
+**[Risc] Ambdós jugadors escollint el mateix personatge** → Mitigació: El servidor assigna IDs de personatge (Bird_Blue, Bird_White) basant-se en l'ordre d'entrada.
 
-**[Risk] Player disconnects mid-game** → Mitigation: Server handles disconnect and notifies other player. Reconnection logic is out of scope but can be added later.
+**[Risc] El jugador es desconnecta a meitat de partida** → Mitigació: El servidor gestiona la desconnexió i notifica a l'altre jugador. La lògica de reconnexió és fora de l'abast però es pot afegir més tard.
 
-## Open Questions
+## Preguntes Obertes
 
-1. Should we interpolate positions on the receiving client for smoother visuals?
-2. How do we handle the initial spawn positions?
-3. What happens if a third player tries to join a full room?
+1. Hauríem d'interpolar les posicions al client receptor per a visuals més suaus?
+2. Com gestionem les posicions inicials d'aparició?
+3. Què passa si un tercer jugador intenta entrar a una sala plena?

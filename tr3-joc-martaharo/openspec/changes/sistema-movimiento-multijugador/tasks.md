@@ -1,32 +1,32 @@
-## 1. Configurar Script de Movimiento en Unity
+## 1. Configurar Script de Moviment a Unity
 
-- [ ] 1.1 Crear script PlayerMovement.cs en Assets/
-- [ ] 1.2 Implementar detección de input (Arrow keys + WASD)
-- [ ] 1.3 Configurar Rigidbody2D en el prefab del jugador
-- [ ] 1.4 Implementar movimiento con velocity
-- [ ] 1.5 Añadir BoxCollider2D para colisiones
-- [ ] 1.6 Probar movimiento local sin red
+- [ ] 1.1 Crear script PlayerMovement.cs a Assets/
+- [ ] 1.2 Implementar detecció d'entrada (Tecles de fletxes + WASD)
+- [ ] 1.3 Configurar Rigidbody2D al prefab del jugador
+- [ ] 1.4 Implementar moviment amb velocity
+- [ ] 1.5 Afegir BoxCollider2D per a col·lisions
+- [ ] 1.6 Provar moviment local sense xarxa
 
-## 2. Crear Evento 'updatePosition' en Socket.io
+## 2. Crear Esdeveniment 'updatePosition' a Socket.io
 
-- [ ] 2.1 Añadir handler 'updatePosition' en server-socket.js
-- [ ] 2.2 Recibir datos de posición: { playerId, x, y }
-- [ ] 2.3 Almacenar posición en memoria del servidor
-- [ ] 2.4 Añadir logging para debug
+- [ ] 2.1 Afegir gestor 'updatePosition' a server-socket.js
+- [ ] 2.2 Rebre dades de posició: { playerId, x, y }
+- [ ] 2.3 Emmagatzemar posició a la memòria del servidor
+- [ ] 2.4 Afegir logging per a depuració
 
-## 3. Sincronizar Posición - Jugador A ve a Jugador B
+## 3. Sincronitzar Posició - El Jugador A veu el Jugador B
 
-- [ ] 3.1 Emitir evento 'updatePosition' desde Unity al moverse
-- [ ] 3.2 Configurar servidor para hacer broadcast a otros jugadores
-- [ ] 3.3 Crear script NetworkManager.cs en Unity
-- [ ] 3.4 Escuchar evento 'playerMoved' en cliente
-- [ ] 3.5 Actualizar posición del oponente al recibir evento
-- [ ] 3.6 Manejar nuevo jugador uniendose (sincronizar posiciones existentes)
+- [ ] 3.1 Enviar esdeveniment 'updatePosition' des d'Unity en moure's
+- [ ] 3.2 Configurar servidor per a fer broadcast a altres jugadors
+- [ ] 3.3 Crear script NetworkManager.cs a Unity
+- [ ] 3.4 Escoltar esdeveniment 'playerMoved' al client
+- [ ] 3.5 Actualitzar posició de l'oponent en rebre l'esdeveniment
+- [ ] 3.6 Gestionar nou jugador unint-se (sincronitzar posicions existents)
 
-## 4. Pruebas de Latencia
+## 4. Proves de Latència
 
-- [ ] 4.1 Medir Round-Trip Time (RTT) para actualizaciones de posición
-- [ ] 4.2 Probar con dos clientes en máquinas diferentes
-- [ ] 4.3 Registrar timestamps para identificar problemas de lag
-- [ ] 4.4 Optimizar si la latencia excede 100ms
-- [ ] 4.5 Documentar resultados de rendimiento
+- [ ] 4.1 Mesurar Round-Trip Time (RTT) per a actualitzacions de posició
+- [ ] 4.2 Provar amb dos clients a màquines diferents
+- [ ] 4.3 Registar timestamps per a identificar problemes de lag
+- [ ] 4.4 Optimitzar si la latència excedeix 100ms
+- [ ] 4.5 Documentar resultats de rendiment

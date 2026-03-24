@@ -1,25 +1,25 @@
-## Why
+## Per què
 
-El proyecto requiere un sistema de movimiento multijugador sincronizado en tiempo real. Actualmente no existe comunicación en tiempo real entre clientes para la sincronización de posiciones de los personajes (Bird_Blue y Bird_White), lo cual es esencial para el gameplay cooperativo de escapar de un enemigo IA.
+El projecte requereix un sistema de moviment multijugador sincronitzat en temps real. Actualment no existeix comunicació en temps real entre clients per a la sincronització de posicions dels personatges (Bird_Blue i Bird_White), la qual cosa és essencial per al gameplay cooperatiu d'escapar d'un enemic IA.
 
-## What Changes
+## Què Canvia
 
-- Implementación de script de movimiento en Unity para personajes controlables por el jugador
-- Integración de Socket.io para comunicación WebSocket en tiempo real
-- Sistema de sincronización bidireccional de posiciones (x, y) entre clientes
-- Detección de colisiones con paredes en el cliente
-- Envío de posición al servidor cada vez que cambie
+- Implementació de script de moviment a Unity per a personatges controlables pel jugador
+- Integració de Socket.io per a comunicació WebSocket en temps real
+- Sistema de sincronització bidireccional de posicions (x, y) entre clients
+- Detecció de col·lisions amb parets al client
+- Enviament de posició al servidor cada cop que canviï
 
-## Capabilities
+## Capacitats
 
-### New Capabilities
-- `multiplayer-movement`: Sistema de movimiento sincronizado para dos jugadores en tiempo real
+### Noves Capacitats
+- `multiplayer-movement`: Sistema de moviment sincronitzat per a dos jugadors en temps real
 
-### Modified Capabilities
-- (Ninguno - funcionalidad nueva)
+### Capacitats Modificades
+- (Cap - funcionalitat nova)
 
-## Impact
+## Impacte
 
-- **Cliente Unity**: Nuevo script de movimiento y integración con Socket.io
-- **Servidor Node.js**: Nuevo endpoint/evento Socket.io para recibir y reenviar posiciones
-- **Dependencias**: Socket.io-client en Unity, socket.io en servidor
+- **Client Unity**: Nou script de moviment i integració amb Socket.io
+- **Servidor Node.js**: Nou endpoint/esdeveniment Socket.io per a rebre i reenviar posicions
+- **Dependències**: Socket.io-client a Unity, socket.io al servidor

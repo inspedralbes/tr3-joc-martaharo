@@ -1,66 +1,66 @@
-# Implementation Plan
+# Pla d'Implementació
 
-## Strategy: 4-Step Approach
+## Estratègia: Enfocament de 4 Passos
 
-### Step 1: Configure Movement Script in Unity
+### Pas 1: Configurar Script de Moviment a Unity
 
-**Objective**: Implement the player movement script that handles input and collision detection.
+**Objectiu**: Implementar el script de moviment del jugador que gestiona l'entrada i la detecció de col·lisions.
 
-**Actions**:
-- Create `PlayerMovement.cs` script in Unity
-- Add input detection for Arrow keys and WASD
-- Implement movement logic with `Rigidbody2D` or `Transform`
-- Add `BoxCollider2D` or `TilemapCollider2D` for wall collision
-- Test local movement before networking
+**Accions**:
+- Crear el script `PlayerMovement.cs` a Unity
+- Afegir detecció d'entrada per a les tecles de fletxes i WASD
+- Implementar la lògica de moviment amb `Rigidbody2D` o `Transform`
+- Afegir `BoxCollider2D` o `TilemapCollider2D` per a col·lisions amb parets
+- Testar el moviment local abans de la xarxa
 
-**Deliverable**: Working local movement for Bird_Blue and Bird_White characters
-
----
-
-### Step 2: Create 'updatePosition' Event in Socket.io
-
-**Objective**: Implement server-side Socket.io event handling for position updates.
-
-**Actions**:
-- Add `updatePosition` event handler in `server-socket.js`
-- Receive position data: `{ playerId, x, y }`
-- Store position in server memory (per room)
-- Log received positions for debugging
-
-**Deliverable**: Server capable of receiving position updates from clients
+**Entregable**: Moviment local funcional per als personatges Bird_Blue i Bird_White
 
 ---
 
-### Step 3: Synchronize Return Data - Player A sees Player B
+### Pas 2: Crear l'Esdeveniment 'updatePosition' a Socket.io
 
-**Objective**: Enable bidirectional position synchronization so players can see each other.
+**Objective**: Implementar la gestió d'esdeveniments Socket.io del costat del servidor per a actualitzacions de posició.
 
-**Actions**:
-- In Unity: Emit `updatePosition` event when local player moves
-- In Server: Broadcast received position to other players in room via `playerMoved` event
-- In Unity: Listen for `playerMoved` event and update opponent sprite position
-- Handle new player joining mid-game (sync existing positions)
+**Accions**:
+- Afegir el gestor de l'esdeveniment `updatePosition` a `server-socket.js`
+- Rebre dades de posició: `{ playerId, x, y }`
+- Emmagatzemar posició a la memòria del servidor (per sala)
+- Registar les posicions rebudes per a depuració
 
-**Deliverable**: Both players see each other's movements in real-time
-
----
-
-### Step 4: Latency Testing
-
-**Objective**: Verify that the synchronization works within acceptable latency parameters.
-
-**Actions**:
-- Measure round-trip time (RTT) for position updates
-- Test with two clients on different machines
-- Log timestamps to identify lag issues
-- Optimize if latency exceeds 100ms threshold
-
-**Deliverable**: Performance report with latency measurements
+**Entregable**: Servidor capaç de rebre actualitzacions de posició dels clients
 
 ---
 
-## Dependencies
+### Pas 3: Sincronitzar Dades de Retorn - El Jugador A veu el Jugador B
 
-- Step 1 must be completed before Step 3
-- Step 2 must be completed before Step 3
-- Step 3 must be completed before Step 4
+**Objectiu**: Habilitar la sincronització bidireccional de posició perquè els jugadors es puguin veure.
+
+**Accions**:
+- A Unity: Enviar l'esdeveniment `updatePosition` quan el jugador local es mou
+- Al Servidor: Difondre la posició rebuda a altres jugadors de la sala via l'esdeveniment `playerMoved`
+- A Unity: Escoltar l'esdeveniment `playerMoved` i actualitzar la posició de l'sprite de l'oponent
+- Gestionar l'entrada d'un nou jugador a meitat de partida (sincronitzar posicions existents)
+
+**Entregable**: Ambdós jugadors veuen els moviments de l'altre en temps real
+
+---
+
+### Pas 4: Proves de Latència
+
+**Objectiu**: Verificar que la sincronització funciona dins dels paràmetres de latència acceptables.
+
+**Accions**:
+- Mesurar el temps d'anada i tornada (RTT) per a les actualitzacions de posició
+- Provar amb dos clients a màquines diferents
+- Registar timestamps per a identificar problemes de lag
+- Optimitzar si la latència supera el llindar de 100ms
+
+**Entregable**: Informe de rendiment amb mesures de latència
+
+---
+
+## Dependències
+
+- El Pas 1 ha de completar-se abans del Pas 3
+- El Pas 2 ha de completar-se abans del Pas 3
+- El Pas 3 ha de completar-se abans del Pas 4

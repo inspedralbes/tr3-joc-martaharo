@@ -1,41 +1,41 @@
-## ADDED Requirements
+## Requisits Afegits
 
-### Requirement: Player Movement Input
-The system SHALL allow players to control their character using keyboard input (Arrow keys or WASD).
+### Requisit: Entrada de Moviment del Jugador
+El sistema HA DE permetre als jugadors controlar el seu personatge mitjançant entrada de teclat (Tecles de fletxes o WASD).
 
-#### Scenario: Player moves right
-- **WHEN** player presses Right Arrow or D key
-- **THEN** character moves in the positive X direction
+#### Escenari: El jugador es mou cap a la dreta
+- **QUAN** el jugador prem la tecla Fletxa dreta o la tecla D
+- **LLAVORS** el personatge es mou en direcció positiva X
 
-#### Scenario: Player moves left
-- **WHEN** player presses Left Arrow or A key
-- **THEN** character moves in the negative X direction
+#### Escenari: El jugador es mou cap a l'esquerra
+- **QUAN** el jugador prem la tecla Fletxa esquerra o la tecla A
+- **LLAVORS** el personatge es mou en direcció negativa X
 
-#### Scenario: Player moves up
-- **WHEN** player presses Up Arrow or W key
-- **THEN** character moves in the positive Y direction
+#### Escenari: El jugador es mou cap amunt
+- **QUAN** el jugador prem la tecla Fletxa amunt o la tecla W
+- **LLAVORS** el personatge es mou en direcció positiva Y
 
-#### Scenario: Player moves down
-- **WHEN** player presses Down Arrow or S key
-- **THEN** character moves in the negative Y direction
+#### Escenari: El jugador es mou cap avall
+- **QUAN** el jugador prem la tecla Fletxa avall o la tecla S
+- **LLAVORS** el personatge es mou en direcció negativa Y
 
-### Requirement: Wall Collision Detection
-The system SHALL prevent players from moving through walls by detecting collisions with wall objects.
+### Requisit: Detecció de Col·lisions amb Parets
+El sistema HA DE preventir que els jugadors es moguin a través de les parets mitjançant la detecció de col·lisions amb objectes de paret.
 
-#### Scenario: Player collides with wall
-- **WHEN** player attempts to move into a wall
-- **THEN** movement is blocked and player remains at current position
+#### Escenari: El jugador col·lideix amb una paret
+- **QUAN** el jugador intenta moure's cap a una paret
+- **LLAVORS** el moviment es bloqtiga i el jugador roman a la posició actual
 
-### Requirement: Real-time Position Synchronization
-The system SHALL send the player's position (x, y) to the server whenever the position changes.
+### Requisit: Sincronització de Posició en Temps Real
+El sistema HA D'enviar la posició del jugador (x, y) al servidor sempre que la posició canviï.
 
-#### Scenario: Position sent to server on movement
-- **WHEN** player moves to a new position
-- **THEN** the new position (x, y) is sent to the server via Socket.io event 'updatePosition'
+#### Escenari: Posició enviada al servidor en moure's
+- **QUAN** el jugador es mou a una nova posició
+- **LLAVORS** la nova posició (x, y) s'envia al servidor via l'esdeveniment Socket.io 'updatePosition'
 
-### Requirement: Opponent Position Display
-The system SHALL display the other player's position in real-time so players can see each other.
+### Requisit: Visualització de la Posició de l'Oponent
+El sistema HA DE mostrar la posició de l'altre jugador en temps real perquè els jugadors es puguin veure.
 
-#### Scenario: Player sees opponent movement
-- **WHEN** opponent player moves to a new position
-- **THEN** the local player sees the opponent sprite move to that position
+#### Escenari: El jugador veu el moviment de l'oponent
+- **QUAN** el jugador oponent es mou a una nova posició
+- **LLAVORS** el jugador local veu l'sprite de l'oponent moure's a aquesta posició
