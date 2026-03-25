@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.Networking;
 using System.Collections;
 using System.Collections.Generic;
-using Newtonsoft.Json;
+using System.Text;
 using SocketIOClient;
 
 /// <summary>
@@ -83,7 +83,7 @@ public class GoalZone : MonoBehaviour
     /// </summary>
     void GestionaraVictoria()
     {
-        Debug.Log("VICTÒRIA! Tots dos jugadors han arribat a la zona d'objectiu!");
+        Debug.Log("VICTÒRIA! Tots dos jugadors han arrivat a la zona d'objectiu!");
         
         // Enviar la puntuació al servidor
         if (AuthManager.nomUsuari != null)
@@ -109,11 +109,13 @@ public class GoalZone : MonoBehaviour
     /// </summary>
     IEnumerator EnviarPuntuacio(string username, int puntuacio)
     {
-        string jsonData = JsonConvert.SerializeObject(new
-        {
-            username = username,
-            puntuacio = puntuacio
-        });
+        // Crear objecte petició
+        RankingRequest peticio = new RankingRequest();
+        peticio.username = username;
+        peticio.puntuacio = puntuacio;
+        peticio.tipus = MainMenuManager.isSinglePlayer ? "SINGLE" : "MULTIPLAYER";
+
+        string jsonData = JsonUtility.ToJson(peticio);
 
         using (UnityWebRequest www = new UnityWebRequest(urlServidor + "/api/rankings", "POST"))
         {
@@ -133,5 +135,14 @@ public class GoalZone : MonoBehaviour
                 Debug.LogError("Error enviant puntuació: " + www.error);
             }
         }
+    }
+
+    // Classe per a la petició de ranking
+    [System.Serializable]
+    public class RankingRequest
+    {
+        public string username;
+        public int puntuacio;
+        public string tipus;
     }
 }

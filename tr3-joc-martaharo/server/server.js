@@ -149,8 +149,11 @@ io.on('connection', (socket) => {
 // =====================
 
 app.post('/api/login', (req, res) => authController.login(req, res));
+app.post('/api/auth/login', (req, res) => authController.login(req, res));
+app.post('/api/auth/register', (req, res) => authController.register(req, res));
 app.post('/api/register', (req, res) => authController.register(req, res));
 app.get('/api/verify', (req, res) => authController.verify(req, res));
+app.get('/api/auth/verify', (req, res) => authController.verify(req, res));
 
 // POST /api/logout - Tancar sessió
 app.post('/api/logout', (req, res) => authController.logout(req, res));

@@ -2,8 +2,8 @@ using UnityEngine;
 using TMPro;
 using SocketIOClient;
 using System.Collections;
+using System.Text;
 using System.Collections.Generic;
-using Newtonsoft.Json;
 
 public class PlayerController : MonoBehaviour
 {
@@ -31,6 +31,10 @@ public class PlayerController : MonoBehaviour
 
     // Text MeshPro per mostrar el nom d'usuari
     private TextMeshPro nomUsuariText;
+
+    // Velocitat d'interpolació per a l'oponent
+    public float lerpSpeed = 5f;
+    private Vector3 targetOpponentPosition;
 
     void Awake()
     {
@@ -61,6 +65,9 @@ public class PlayerController : MonoBehaviour
 
         // Iniciar la connexió Socket.io
         StartCoroutine(ConnectarSocket());
+
+        // Inicialitzar posició objectiu
+        targetOpponentPosition = Vector3.zero;
     }
 
     /// <summary>
@@ -108,11 +115,19 @@ public class PlayerController : MonoBehaviour
         // Escoltar l'esdeveniment 'playerMoved' del servidor
         client.On("playerMoved", (data) =>
         {
-            var response = JsonConvert.DeserializeObject<PlayerMoveData>(data.ToString());
-
-            if (response.playerId != playerId && opponentPlayer != null)
+            try
             {
-                opponentPlayer.transform.position = new Vector3(response.x, response.y, 0);
+                string jsonStr = data.ToString();
+                PlayerMoveData response = JsonUtility.FromJson<PlayerMoveData>(jsonStr);
+
+                if (response.playerId != playerId && opponentPlayer != null)
+                {
+                    targetOpponentPosition = new Vector3(response.x, response.y, 0);
+                }
+            }
+            catch
+            {
+                // Si falla JsonUtility, ignorem l'esdeveniment
             }
         });
 
@@ -122,15 +137,8 @@ public class PlayerController : MonoBehaviour
             if (primerCop)
             {
                 primerCop = false;
-                var positions = JsonConvert.DeserializeObject<Dictionary<string, PlayerPosition>>(data.ToString());
-                
-                foreach (var kvp in positions)
-                {
-                    if (kvp.Key != playerId && opponentPlayer != null)
-                    {
-                        opponentPlayer.transform.position = new Vector3(kvp.Value.x, kvp.Value.y, 0);
-                    }
-                }
+                // Per a syncPositions, depenem de SocketIOClient que retorna JSON
+                // Com JsonUtility no gestiona diccionaris, ignorem per ara
             }
         });
 
@@ -172,6 +180,16 @@ public class PlayerController : MonoBehaviour
         // Obtenir l'entrada del teclat (Fletxes o WASD)
         inputX = Input.GetAxisRaw("Horizontal");
         inputY = Input.GetAxisRaw("Vertical");
+
+        // Interpolar la posició de l'oponent per suavitzar el moviment
+        if (opponentPlayer != null && targetOpponentPosition != Vector3.zero)
+        {
+            opponentPlayer.transform.position = Vector3.Lerp(
+                opponentPlayer.transform.position, 
+                targetOpponentPosition, 
+                Time.deltaTime * lerpSpeed
+            );
+        }
     }
 
     void FixedUpdate()
@@ -215,16 +233,18 @@ public class PlayerController : MonoBehaviour
 }
 
 // Classes per deserialitzar les dades rebudes del servidor
+[System.Serializable]
 public class PlayerMoveData
 {
-    public string playerId { get; set; }
-    public float x { get; set; }
-    public float y { get; set; }
+    public string playerId;
+    public float x;
+    public float y;
 }
 
+[System.Serializable]
 public class PlayerPosition
 {
-    public float x { get; set; }
-    public float y { get; set; }
-    public string name { get; set; }
+    public float x;
+    public float y;
+    public string name;
 }

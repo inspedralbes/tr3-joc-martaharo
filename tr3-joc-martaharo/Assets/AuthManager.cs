@@ -3,7 +3,6 @@ using UnityEngine.SceneManagement;
 using UnityEngine.Networking;
 using System.Collections;
 using System.Text;
-using Newtonsoft.Json;
 
 public class AuthManager : MonoBehaviour
 {
@@ -48,12 +47,13 @@ public class AuthManager : MonoBehaviour
     {
         MostrarError("Connectant...");
 
-        // Crear el JSON amb les dades del usuari
-        string jsonData = JsonConvert.SerializeObject(new
-        {
-            username = usuari,
-            password = contrasenya
-        });
+        // Crear l'objecte petició
+        LoginRequest peticio = new LoginRequest();
+        peticio.username = usuari;
+        peticio.password = contrasenya;
+
+        // Convertir a JSON amb JsonUtility
+        string jsonData = JsonUtility.ToJson(peticio);
 
         using (UnityWebRequest www = new UnityWebRequest(urlServidor + "/api/login", "POST"))
         {
@@ -67,7 +67,9 @@ public class AuthManager : MonoBehaviour
             if (www.result == UnityWebRequest.Result.Success)
             {
                 string resposta = www.downloadHandler.text;
-                var dadesResposta = JsonConvert.DeserializeObject<LoginResposta>(resposta);
+                
+                // Deserialitzar resposta amb JsonUtility
+                LoginResposta dadesResposta = JsonUtility.FromJson<LoginResposta>(resposta);
 
                 // Guardar el token i el nom d'usuari
                 token = dadesResposta.token;
@@ -89,7 +91,7 @@ public class AuthManager : MonoBehaviour
                 {
                     try
                     {
-                        var errorResponse = JsonConvert.DeserializeObject<ErrorResposta>(www.downloadHandler.text);
+                        ErrorResposta errorResponse = JsonUtility.FromJson<ErrorResposta>(www.downloadHandler.text);
                         if (!string.IsNullOrEmpty(errorResponse.error))
                         {
                             errorMsg = errorResponse.error;
@@ -120,6 +122,14 @@ public class AuthManager : MonoBehaviour
         }
     }
 
+    // Classe per a la petició de login
+    [System.Serializable]
+    public class LoginRequest
+    {
+        public string username;
+        public string password;
+    }
+
     // Classe per deserialitzar la resposta del servidor
     [System.Serializable]
     public class LoginResposta
@@ -128,17 +138,18 @@ public class AuthManager : MonoBehaviour
         public string username;
     }
 
+    // Classe per deserialitzar errors
+    [System.Serializable]
+    public class ErrorResposta
+    {
+        public string error;
+    }
+
     // Mètode per tancar sessió (opcional)
     public void TancarSessio()
     {
         token = null;
         nomUsuari = null;
         SceneManager.LoadScene("Login");
-    }
-
-    [System.Serializable]
-    public class ErrorResposta
-    {
-        public string error;
     }
 }

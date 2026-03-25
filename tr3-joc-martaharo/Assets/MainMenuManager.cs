@@ -3,7 +3,6 @@ using UnityEngine.SceneManagement;
 using UnityEngine.Networking;
 using System.Collections;
 using System.Text;
-using Newtonsoft.Json;
 using TMPro;
 
 public class MainMenuManager : MonoBehaviour
@@ -64,7 +63,7 @@ public class MainMenuManager : MonoBehaviour
             if (www.result == UnityWebRequest.Result.Success)
             {
                 string resposta = www.downloadHandler.text;
-                var dades = JsonConvert.DeserializeObject<SinglePlayerRoomResponse>(resposta);
+                SinglePlayerRoomResponse dades = JsonUtility.FromJson<SinglePlayerRoomResponse>(resposta);
 
                 roomId = dades.roomId;
                 roomCode = dades.roomCode;
@@ -113,10 +112,11 @@ public class MainMenuManager : MonoBehaviour
         missatgeCrear.text = "Creant sala...";
         missatgeCrear.color = Color.white;
 
-        string jsonData = JsonConvert.SerializeObject(new
-        {
-            nom_sala = nom
-        });
+        // Crear objecte petició
+        RoomRequest peticio = new RoomRequest();
+        peticio.nom_sala = nom;
+
+        string jsonData = JsonUtility.ToJson(peticio);
 
         using (UnityWebRequest www = new UnityWebRequest(urlServidor + "/api/rooms", "POST"))
         {
@@ -131,7 +131,7 @@ public class MainMenuManager : MonoBehaviour
             if (www.result == UnityWebRequest.Result.Success)
             {
                 string resposta = www.downloadHandler.text;
-                var dades = JsonConvert.DeserializeObject<RoomResponse>(resposta);
+                RoomResponse dades = JsonUtility.FromJson<RoomResponse>(resposta);
 
                 roomId = dades.roomId;
                 roomCode = dades.roomCode;
@@ -190,10 +190,21 @@ public class MainMenuManager : MonoBehaviour
             if (www.result == UnityWebRequest.Result.Success)
             {
                 string resposta = www.downloadHandler.text;
-                var sales = JsonConvert.DeserializeObject<RoomListResponse>(resposta);
+                RoomListResponse sales = JsonUtility.FromJson<RoomListResponse>(resposta);
 
                 // Buscar la sala pel codi
-                var salaTrobada = System.Array.Find(sales.rooms, s => s.codi_sala == codi);
+                RoomItem salaTrobada = null;
+                if (sales != null && sales.rooms != null)
+                {
+                    foreach (RoomItem room in sales.rooms)
+                    {
+                        if (room.codi_sala == codi)
+                        {
+                            salaTrobada = room;
+                            break;
+                        }
+                    }
+                }
 
                 if (salaTrobada != null)
                 {
@@ -239,7 +250,7 @@ public class MainMenuManager : MonoBehaviour
             else
             {
                 string errorResposta = www.downloadHandler.text;
-                var error = JsonConvert.DeserializeObject<ErrorResponse>(errorResposta);
+                ErrorResponse error = JsonUtility.FromJson<ErrorResponse>(errorResposta);
                 missatgeUnir.text = error.error;
                 missatgeUnir.color = Color.red;
             }
@@ -250,6 +261,13 @@ public class MainMenuManager : MonoBehaviour
     public void Tornar()
     {
         MostrarPanellPrincipal();
+    }
+
+    // Classes per a les peticions
+    [System.Serializable]
+    public class RoomRequest
+    {
+        public string nom_sala;
     }
 
     // Classes per deserialitzar respostes

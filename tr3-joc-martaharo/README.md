@@ -2,6 +2,19 @@
 
 Projecte DAM per a un joc cooperatiu 2D multijugador online.
 
+## Requisits per executar
+
+### Unity
+- Unity 2022.3+ (URP)
+- **NO es requereixen llibreries externes** - El projecte utilitza:
+  - `JsonUtility` (natiu d'Unity) per al parsing de JSON
+  - `UnityWebRequest` (natiu) per a peticions HTTP
+  - `SocketIOClient` (nuget package) per a comunicació temps real
+
+### Servidor
+- Node.js v16+
+- MongoDB Atlas (compte actiu)
+
 ## Estructura del Projecte
 
 ```

@@ -4,7 +4,6 @@ using UnityEngine.Networking;
 using System.Collections;
 using System.Text;
 using System.Collections.Generic;
-using Newtonsoft.Json;
 using SocketIOClient;
 
 public class LobbyManager : MonoBehaviour
@@ -78,10 +77,11 @@ public class LobbyManager : MonoBehaviour
     {
         MostrarInfo("Creant sala...");
 
-        string jsonData = JsonConvert.SerializeObject(new
-        {
-            nom_sala = nomSala
-        });
+        // Crear objecte petició
+        RoomRequest peticio = new RoomRequest();
+        peticio.nom_sala = nomSala;
+
+        string jsonData = JsonUtility.ToJson(peticio);
 
         using (UnityWebRequest www = new UnityWebRequest(urlServidor + "/api/rooms", "POST"))
         {
@@ -96,9 +96,10 @@ public class LobbyManager : MonoBehaviour
             if (www.result == UnityWebRequest.Result.Success)
             {
                 string resposta = www.downloadHandler.text;
-                var dades = JsonConvert.DeserializeObject<RoomResposta>(resposta);
+                RoomResposta dades = JsonUtility.FromJson<RoomResposta>(resposta);
 
                 roomId = dades.roomId;
+                roomCode = dades.roomCode;
                 LobbyManager.nomSala = nomSala;
 
                 Debug.Log("Sala creada: " + nomSala + " (ID: " + roomId + ")");
@@ -144,10 +145,24 @@ public class LobbyManager : MonoBehaviour
             if (www.result == UnityWebRequest.Result.Success)
             {
                 string resposta = www.downloadHandler.text;
-                var sales = JsonConvert.DeserializeObject<List<RoomInfo>>(resposta);
+                
+                // JsonUtility no pot deserialitzar arrays directament
+                // Fem servir un wrapper
+                RoomListResponse salesWrapper = JsonUtility.FromJson<RoomListResponse>(resposta);
 
                 // Buscar la sala pel nom
-                RoomInfo salaTrobada = sales.Find(s => s.nom_sala == nomSala);
+                RoomInfo salaTrobada = null;
+                if (salesWrapper != null && salesWrapper.rooms != null)
+                {
+                    foreach (RoomInfo room in salesWrapper.rooms)
+                    {
+                        if (room.nom_sala == nomSala)
+                        {
+                            salaTrobada = room;
+                            break;
+                        }
+                    }
+                }
 
                 if (salaTrobada != null)
                 {
@@ -155,8 +170,7 @@ public class LobbyManager : MonoBehaviour
                 }
                 else
                 {
-                    // La sala no existeix, crear-la automàticament
-                    MostrarInfo("La sala no existeix. La crees?");
+                    MostrarInfo("La sala no existeix.");
                 }
             }
             else
@@ -183,7 +197,6 @@ public class LobbyManager : MonoBehaviour
                 Debug.Log("Unit a la sala: " + idSala);
                 MostrarInfo("Unit a la sala! Començant partida...");
                 
-                // Anar directament a l'escena de joc (ja que som el segon jugador)
                 yield return new WaitForSeconds(1f);
                 SceneManager.LoadScene("Joc");
             }
@@ -210,12 +223,26 @@ public class LobbyManager : MonoBehaviour
         }
     }
 
+    // Classes per a les peticions
+    [System.Serializable]
+    public class RoomRequest
+    {
+        public string nom_sala;
+    }
+
     // Classes per deserialitzar les respostes
     [System.Serializable]
     public class RoomResposta
     {
         public string roomId;
         public string roomCode;
+    }
+
+    // Wrapper per a la llista de sales (JsonUtility no suporta arrays)
+    [System.Serializable]
+    public class RoomListResponse
+    {
+        public RoomInfo[] rooms;
     }
 
     [System.Serializable]
