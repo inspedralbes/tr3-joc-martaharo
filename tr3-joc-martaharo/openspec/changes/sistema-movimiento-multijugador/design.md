@@ -1,23 +1,25 @@
 ## Context
 
-El projecte és un joc cooperatiu 2D Pixel Art on dos jugadors han d'escapar d'un enemic IA en temps real. L'arquitectura actual té un servidor Node.js amb Socket.io i un client Unity. La peça que falta és el sistema de moviment sincronitzat que permet a ambdós jugadors veure les posicions de l'altre en temps real.
+El projecte és un joc cooperatiu 2D Pixel Art on dos jugadors han d'escapar d'un enemic IA en temps real. L'arquitectura actual té un servidor Node.js amb Socket.io i un client Unity. El sistema inclou autenticació, gestió de sales i sincronització de moviment.
 
 **Estat Actual**:
-- El servidor té la gestió bàsica de sales i configuració de Socket.io
-- El client Unity té autenticació i gestió de sales via HTTP
-- No existeix sincronització de posició en temps real
+- El servidor té gestió d'usuaris a MongoDB (base de dades `joc`, col·lecció `usuaris`)
+- El client Unity té autenticació (Login) i gestió de sales (Lobby)
+- Socket.io gestiona l'entrada a sales i sincronització de posicions
 
 **Restriccions**:
-- El moviment ha de ser fluid (alta freqüència d'actualització)
-- Sincronització via WebSockets només
-- Ha de treballar amb l'arquitectura de sales existent
+- El moviment ha de ser fluid (alta frequiència d'actualització)
+- Sincronització via WebSockets
+- Sistema de sales existent (socket.join(roomId))
 
 ## Objectius / No-Objectius
 
 **Objectius**:
+- Implementar sistema de login que validi usuaris contra MongoDB (col·lecció `usuaris`)
+- Implementar gestió de sales (crear, llistar, unir-se)
 - Implementar el moviment del jugador a Unity amb entrada de teclat
 - Afegir detecció de col·lisions amb parets
-- Crear sincronització bidireccional de posició via Socket.io
+- Crear sincronització bidireccional de posició via Socket.io per sala
 - Testar i verificar el rendiment en temps real
 
 **No-Objectius**:

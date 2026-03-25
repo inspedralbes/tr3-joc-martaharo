@@ -1,4 +1,5 @@
 using UnityEngine;
+using TMPro;
 using SocketIOClient;
 using System.Collections;
 using System.Collections.Generic;
@@ -22,37 +23,93 @@ public class PlayerController : MonoBehaviour
 
     // Identificador del jugador i de la sala
     public string playerId;
-    public string roomId = "sala1";
+    public string roomId;
 
     // Referència a l'altre jugador (l'oponent)
     public GameObject opponentPlayer;
     private bool primerCop = true;
+
+    // Text MeshPro per mostrar el nom d'usuari
+    private TextMeshPro nomUsuariText;
+
+    void Awake()
+    {
+        // Obtenir el roomId des del LobbyManager (variable estàtica)
+        roomId = LobbyManager.roomId;
+
+        if (string.IsNullOrEmpty(roomId))
+        {
+            roomId = "sala1";
+            Debug.LogWarning("No s'ha trobat roomId, utilitzant per defecte: sala1");
+        }
+        else
+        {
+            Debug.Log("RoomId rebut del Lobby: " + roomId);
+        }
+    }
 
     void Start()
     {
         // Obtenir el component Rigidbody2D d'aquest objecte
         rb = GetComponent<Rigidbody2D>();
 
-        // Configurar l'identificador del jugador (pots canviar-ho segons el teu sistema)
+        // Configurar l'identificador del jugador
         playerId = "player_" + GetInstanceID();
+
+        // Crear el text amb el nom d'usuari a sobre del jugador
+        CrearTextNomUsuari();
 
         // Iniciar la connexió Socket.io
         StartCoroutine(ConnectarSocket());
     }
 
+    /// <summary>
+    /// Crear un objecte de text TMP a sobre del jugador amb el seu nom d'usuari.
+    /// </summary>
+    void CrearTextNomUsuari()
+    {
+        // Buscar si ja existeix un fill amb el component TextMeshPro
+        nomUsuariText = GetComponentInChildren<TextMeshPro>();
+
+        if (nomUsuariText == null)
+        {
+            // Crear un nou GameObject per al text
+            GameObject textObject = new GameObject("NomUsuari");
+            textObject.transform.SetParent(transform);
+            textObject.transform.localPosition = new Vector3(0, 1.5f, 0);
+
+            // Afegir el component TextMeshPro
+            nomUsuariText = textObject.AddComponent<TextMeshPro>();
+
+            // Configurar l'estil del text
+            nomUsuariText.fontSize = 3;
+            nomUsuariText.alignment = TextAlignmentOptions.Center;
+            nomUsuariText.color = Color.white;
+            nomUsuariText.outlineWidth = 0.2f;
+            nomUsuariText.outlineColor = Color.black;
+        }
+
+        // Assignar el nom d'usuari (des d'AuthManager)
+        if (AuthManager.nomUsuari != null)
+        {
+            nomUsuariText.text = AuthManager.nomUsuari;
+        }
+        else
+        {
+            nomUsuariText.text = playerId;
+        }
+    }
+
     // Corrutina per connectar-se al servidor Socket.io
     IEnumerator ConnectarSocket()
     {
-        // CORRECCIÓ AQUÍ: Hem eliminat les claus i el punt i coma que sobraven
         client = new SocketIO("http://localhost:3000");
 
         // Escoltar l'esdeveniment 'playerMoved' del servidor
         client.On("playerMoved", (data) =>
         {
-            // Rebre les dades de posició de l'oponent
             var response = JsonConvert.DeserializeObject<PlayerMoveData>(data.ToString());
 
-            // Actualitzar la posició de l'oponent (si no és nosaltres)
             if (response.playerId != playerId && opponentPlayer != null)
             {
                 opponentPlayer.transform.position = new Vector3(response.x, response.y, 0);
@@ -77,7 +134,18 @@ public class PlayerController : MonoBehaviour
             }
         });
 
-        // Intentar connectar
+        // Escoltar l'esdeveniment de desconnexió de l'altre jugador
+        client.On("jugadorDesconnectat", (data) =>
+        {
+            Debug.Log("L'altre jugador s'ha desconnectat!");
+            
+            // Desactivar l'oponent
+            if (opponentPlayer != null)
+            {
+                opponentPlayer.SetActive(false);
+            }
+        });
+
         yield return client.ConnectAsync();
 
         if (client.Connected)
@@ -90,7 +158,7 @@ public class PlayerController : MonoBehaviour
             {
                 roomId = roomId,
                 playerId = playerId,
-                playerName = playerId
+                playerName = AuthManager.nomUsuari ?? playerId
             });
         }
         else
@@ -139,6 +207,8 @@ public class PlayerController : MonoBehaviour
         // Desconnectar quan es destrueixi l'objecte
         if (clientConnectat && client != null)
         {
+            // Notificar als altres jugadors que ens desconnectem
+            client.EmitAsync("jugadorDesconnectat", new { playerId = playerId });
             client.DisconnectAsync();
         }
     }

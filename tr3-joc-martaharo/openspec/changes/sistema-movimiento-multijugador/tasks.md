@@ -1,32 +1,52 @@
-## 1. Configurar Script de Moviment a Unity
+## Tasques Pendents
 
-- [ ] 1.1 Crear script PlayerMovement.cs a Assets/
-- [ ] 1.2 Implementar detecció d'entrada (Tecles de fletxes + WASD)
-- [ ] 1.3 Configurar Rigidbody2D al prefab del jugador
-- [ ] 1.4 Implementar moviment amb velocity
-- [ ] 1.5 Afegir BoxCollider2D per a col·lisions
-- [ ] 1.6 Provar moviment local sense xarxa
+### Funcionalitats Implementades ✅
 
-## 2. Crear Esdeveniment 'updatePosition' a Socket.io
+- [x] 1.1 Configurar connexió MongoDB a la base de dades `joc_multijugador`
+- [x] 1.2 Crear schema per a la col·lecció `usuaris`
+- [x] 1.3 Implementar ruta POST `/api/login` al servidor
+- [x] 1.4 Validar usuari i contrasenya (amb bcrypt)
+- [x] 1.5 Retornar token de sessió
 
-- [ ] 2.1 Afegir gestor 'updatePosition' a server-socket.js
-- [ ] 2.2 Rebre dades de posició: { playerId, x, y }
-- [ ] 2.3 Emmagatzemar posició a la memòria del servidor
-- [ ] 2.4 Afegir logging per a depuració
+- [x] 2.1 Crear ruta POST `/api/rooms` per crear sales
+- [x] 2.2 Crear ruta GET `/api/rooms` per llistar sales
+- [x] 2.3 Crear ruta POST `/api/rooms/:id/join` per unir-se
+- [x] 2.4 Emmagatzemar sales a MongoDB amb persistència
 
-## 3. Sincronitzar Posició - El Jugador A veu el Jugador B
+- [x] 3.1 Implementar esdeveniment `joinRoom` amb `socket.join(roomId)`
+- [x] 3.2 Gestionar `updatePosition` amb filtrat per sala
+- [x] 3.3 Sincronitzar posicions només entre jugadors de la mateixa sala
 
-- [ ] 3.1 Enviar esdeveniment 'updatePosition' des d'Unity en moure's
-- [ ] 3.2 Configurar servidor per a fer broadcast a altres jugadors
-- [ ] 3.3 Crear script NetworkManager.cs a Unity
-- [ ] 3.4 Escoltar esdeveniment 'playerMoved' al client
-- [ ] 3.5 Actualitzar posició de l'oponent en rebre l'esdeveniment
-- [ ] 3.6 Gestionar nou jugador unint-se (sincronitzar posicions existents)
+- [x] 4.1 Script `PlayerController.cs` a Unity
+- [x] 4.2 Implementar detecció d'entrada (Fletxes + WASD)
+- [x] 4.3 Configurar Rigidbody2D per al moviment
+- [x] 4.4 Afegir col·lisions amb parets
 
-## 4. Proves de Latència
+- [x] 5.1 Enviar esdeveniment `updatePosition` quan el jugador es mou
+- [x] 5.2 Escoltar esdeveniment al client
+- [x] 5.3 Actualitzar posició de l'oponent
+- [x] 5.4 Gestionar nou jugador unint-se a la sala
 
-- [ ] 4.1 Mesurar Round-Trip Time (RTT) per a actualitzacions de posició
-- [ ] 4.2 Provar amb dos clients a màquines diferents
-- [ ] 4.3 Registar timestamps per a identificar problemes de lag
-- [ ] 4.4 Optimitzar si la latència excedeix 100ms
-- [ ] 4.5 Documentar resultats de rendiment
+- [x] 6.1 Patró Repository implementat (Punt 4.2)
+- [x] 6.2 Mode Single Player implementat
+
+### Tasques Pendents 🔲
+
+## 1. Sincronització de l'Enemic IA 🔲
+
+- [ ] 1.1 Implementar lògica de moviment de l'enemic al servidor
+- [ ] 1.2 Transmetre posició de l'enemic via Socket.io
+- [ ] 1.3 Rebre posició a Unity amb Vector3.Lerp
+- [ ] 1.4 Gestionar col·lisions amb el jugador
+
+## 2. Poliment de la UI de Rànquing 🔲
+
+- [ ] 2.1 Mostrar rànquing separats per tipus (Single/Multi)
+- [ ] 2.2 Afegir animacions visuals
+- [ ] 2.3 Millorar feedback d'errors
+
+## 3. Proves de Latència 🔲
+
+- [ ] 3.1 Mesurar Round-Trip Time (RTT)
+- [ ] 3.2 Provar amb dos clients a màquines diferents
+- [ ] 3.3 Documentar resultats de rendiment

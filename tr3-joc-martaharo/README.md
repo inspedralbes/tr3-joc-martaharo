@@ -1,88 +1,133 @@
-# Uso del servidor y cliente Unity
+# TR3 - Joc Multiplayer Marta Haro
 
-## Servidor Node.js
+Projecte DAM per a un joc cooperatiu 2D multijugador online.
 
-### Instalación
+## Estructura del Projecte
+
+```
+tr3-joc-martaharo/
+├── Assets/                   # Projecte Unity
+│   └── Scripts/
+│       ├── AuthManager.cs
+│       ├── MainMenuManager.cs
+│       ├── LobbyManager.cs
+│       ├── PlayerController.cs
+│       ├── EnemyNetworkSync.cs
+│       └── GoalZone.cs
+├── server/                   # Backend Node.js
+│   ├── .env                 # Configuració (NO pujar a GitHub)
+│   ├── server.js            # Punt d'entrada
+│   ├── controllers/         # Capa HTTP
+│   ├── services/           # Lògica de negoci
+│   └── repositories/       # Accés a dades
+└── openspec/               # Documentació tècnica
+```
+
+## Requisits
+
+- **Unity**: 2022.3+ (URP)
+- **Node.js**: v16+
+- **MongoDB Atlas**: Compte actiu amb base de dades `joc_multijugador`
+
+## Instal·lació i Execució
+
+### 1. Configurar el servidor
+
 ```bash
+cd server
 npm install
 ```
 
-### Iniciar servidor
+### 2. Configurar variables d'entorn
+
+Crear fitxer `server/.env`:
+```env
+PORT=3000
+MONGO_URI=mongodb+srv://<usuari>:<contrasenya>@cluster.mongodb.net/joc_multijugador?retryWrites=true&w=majority
+```
+
+### 3. Iniciar el servidor
+
 ```bash
 npm start
 ```
 
-El servidor escucha en `http://localhost:3000`
+El servidor s'iniciarà a `http://localhost:3000`
 
-### Endpoints API REST
+## Arquitectura - Patró Repository (Punt 4.2)
 
-| Método | Endpoint | Descripción |
+El projecte segueix una arquitectura de 3 capes:
+
+### Capa Repository (Accés a Dades)
+- `UserRepository.js` - Gestió d'usuaris
+- `GameRepository.js` - Gestió de sales/partides
+- `ResultRepository.js` - Gestió de rànquings
+
+### Capa Service (Lògica de Negoci)
+- `AuthService.js` - Autenticació amb bcrypt
+- `GameService.js` - Lògica de joc (Single/Multiplayer)
+- `ResultService.js` - Gestió de resultats
+
+### Capa Controller (HTTP)
+- `AuthController.js` - Rutes d'autenticació
+- `GameController.js` - Rutes de sales
+- `ResultController.js` - Rutes de rànquings
+
+## API Endpoints
+
+### Autenticació
+| Mètode | Endpoint | Descripció |
 |--------|----------|-------------|
-| POST | `/api/register` | Registrar usuario {username, password} |
-| POST | `/api/login` | Login usuario {username, password} |
-| GET | `/api/verify` | Verificar token (Header: Authorization: Bearer <token>) |
-| POST | `/api/logout` | Cerrar sesión |
-| POST | `/api/rooms` | Crear sala {roomName, maxPlayers} (Header: Bearer <token>) |
-| GET | `/api/rooms` | Listar salas disponibles |
-| GET | `/api/rooms/:roomId` | Ver info de una sala |
-| POST | `/api/rooms/:roomId/join` | Unirse a una sala (Header: Bearer <token>) |
+| POST | `/api/register` | Registrar usuari |
+| POST | `/api/login` | Iniciar sessió |
+| GET | `/api/verify` | Verificar token |
+| POST | `/api/logout` | Tancar sessió |
 
-### Respuestas
+### Sales
+| Mètode | Endpoint | Descripció |
+|--------|----------|-------------|
+| POST | `/api/rooms/single` | Crear partida single-player |
+| POST | `/api/rooms` | Crear sala multiplayer |
+| GET | `/api/rooms` | Llistar sales (parametre: `?tipus=SINGLE\|MULTIPLAYER`) |
+| POST | `/api/rooms/:id/join` | Unir-se a una sala |
 
-**Register/Login exitosos:**
-```json
-{
-  "token": "abc123...",
-  "username": "player1"
-}
+### Rànquings
+| Mètode | Endpoint | Descripció |
+|--------|----------|-------------|
+| POST | `/api/rankings` | Guardar puntuació |
+| GET | `/api/rankings` | Obtenir rànquing (parametre: `?tipus=SINGLE\|MULTIPLAYER`) |
+
+## Modes de Joc
+
+### Single Player
+- El jugador juga sol contra la IA
+- La partida comença immediatament
+- La puntuació es guarda amb tipus `SINGLE`
+
+### Multiplayer
+- Crear sala → Rebre codi de 5 caràcters
+- Compartir codi amb el company
+- Unir-se amb el codi
+- Quan 2 jugadors, la partida comença
+
+## Seguretat
+
+- Contrasenyes encriptades amb bcrypt (salt: 10)
+- Variables d'entorn protegides al .env
+- Tokens de sessió aleatoris
+
+## Logs en Català
+
+El servidor mostra logs de traçabilitat:
+```
+[REPOSITORY] Cercant usuari a MongoDB...
+[SERVICE] Validant credencials...
+[LOGIN] Usuari Maria ha iniciat sessió correctament.
+[SALA] Sala ABC12 creada amb èxit.
+[GAME] Iniciada partida en mode SOLITARI...
+[RANKING] Puntuació guardada per Maria: 100 (SINGLE)
 ```
 
-**Crear sala:**
-```json
-{
-  "roomId": "abc123",
-  "room": { "id": "abc123", "name": "Sala1", "maxPlayers": 2, "players": ["player1"], ... }
-}
-```
+---
 
-**Error:**
-```json
-{
-  "error": "Mensaje de error"
-}
-```
-
-## Unity - AuthManager.cs
-
-### Uso en escena
-
-1. Añadir `AuthManager.cs` a un GameObject en la escena
-2. Configurar `BASE_URL` si el servidor está en otra máquina
-3. Usar los eventos o propiedades:
-
-```csharp
-// Login
-AuthManager.Instance.Login(username, password);
-// Callback
-AuthManager.Instance.OnLoginResponse += (success, username) => { ... };
-
-// Registro
-AuthManager.Instance.Register(username, password);
-
-// Crear sala
-StartCoroutine(CreateRoom(roomName, (success, roomId) => { ... }));
-
-// Unirse a sala
-StartCoroutine(JoinRoom(roomId, (success, room) => { ... }));
-
-// Listar salas
-StartCoroutine(GetRooms((rooms) => { ... }));
-
-// Logout
-AuthManager.Instance.Logout();
-```
-
-### Propiedades
-- `IsLoggedIn`: Boolean indicando si hay sesión activa
-- `AuthToken`: Token actual para usar en WebSocket
-- `CurrentUsername`: Nombre de usuario logueado
+Projecte TR3DAM 2025-26 - Marta Haro
