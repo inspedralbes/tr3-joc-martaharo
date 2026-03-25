@@ -1,3 +1,9 @@
+// =================================================================================
+// SCRIPT: LobbyManager
+// UBICACIÓ: Assets/_Project/Scripts/UI/
+// DESCRIPCIÓ: Gestió del Lobby i creació/unió a sales de joc
+// =================================================================================
+
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Networking;

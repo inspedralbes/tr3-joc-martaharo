@@ -1,3 +1,9 @@
+// =================================================================================
+// SCRIPT: MainMenuManager
+// UBICACIÓ: Assets/_Project/Scripts/UI/
+// DESCRIPCIÓ: Menú principal amb opcions Single Player i Multiplayer
+// =================================================================================
+
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Networking;

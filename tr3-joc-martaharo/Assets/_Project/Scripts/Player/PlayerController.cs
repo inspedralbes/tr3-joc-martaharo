@@ -1,3 +1,9 @@
+// =================================================================================
+// SCRIPT: PlayerController
+// UBICACIÓ: Assets/_Project/Scripts/Player/
+// DESCRIPCIÓ: Control de moviment del jugador i comunicació Socket.io
+// =================================================================================
+
 using UnityEngine;
 using TMPro;
 using SocketIOClient;

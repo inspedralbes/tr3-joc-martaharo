@@ -1,3 +1,9 @@
+// =================================================================================
+// SCRIPT: EnemyNetworkSync
+// UBICACIÓ: Assets/_Project/Scripts/Network/
+// DESCRIPCIÓ: Sincronització de l'enemic des del servidor amb interpolació
+// =================================================================================
+
 using UnityEngine;
 using SocketIOClient;
 using System.Collections;

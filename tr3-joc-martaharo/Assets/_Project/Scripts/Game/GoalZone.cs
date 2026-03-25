@@ -1,3 +1,9 @@
+// =================================================================================
+// SCRIPT: GoalZone
+// UBICACIÓ: Assets/_Project/Scripts/Game/
+// DESCRIPCIÓ: Detecta quan els jugadors entren a la zona d'objectiu i guarda puntuació
+// =================================================================================
+
 using UnityEngine;
 using UnityEngine.Networking;
 using System.Collections;
@@ -5,10 +11,6 @@ using System.Collections.Generic;
 using System.Text;
 using SocketIOClient;
 
-/// <summary>
-/// Script per detectar quan els dos jugadors entren a la zona d'objectiu.
-/// Quan ambdós jugadors hi són, s'envia la puntuació al servidor.
-/// </summary>
 public class GoalZone : MonoBehaviour
 {
     // URL del servidor Node.js

@@ -1,3 +1,9 @@
+// =================================================================================
+// SCRIPT: AuthManager
+// UBICACIÓ: Assets/_Project/Scripts/Network/
+// DESCRIPCIÓ: Gestió d'autenticació amb el servidor Node.js
+// =================================================================================
+
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Networking;
