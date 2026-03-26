@@ -25,8 +25,22 @@ public class GoalZone : MonoBehaviour
     // Puntuació per guanyar la partida
     private int puntuacioVictoria = 100;
 
+    // Control de si ja s'ha guanyat
+    private bool jaGuanyat = false;
+
+    // Control de si la meta està bloquejada
+    private bool metaBloquejada = false;
+    private string guanyador = null;
+
+    // Referència a la sala
+    private string roomId;
+
     void Start()
     {
+        roomId = LobbyManager.roomId;
+        if (string.IsNullOrEmpty(roomId))
+            roomId = MainMenuManager.roomId;
+
         // Iniciar connexió Socket.io
         StartCoroutine(ConnectarSocket());
     }
@@ -34,6 +48,44 @@ public class GoalZone : MonoBehaviour
     IEnumerator ConnectarSocket()
     {
         client = new SocketIO(urlServidor);
+
+        // Escoltar l'estat de la meta des del servidor
+        client.On("goalStatus", (data) =>
+        {
+            var status = JsonUtility.FromJson<GoalStatusData>(data.ToString());
+            metaBloquejada = status.blocked;
+            guanyador = status.winner;
+
+            if (metaBloquejada && guanyador != AuthManager.nomUsuari)
+            {
+                Debug.Log("La meta està bloquejada. Has perdut!");
+                if (GameManager.Instance != null)
+                {
+                    GameManager.Instance.Defeat();
+                }
+            }
+        });
+
+        // Escoltar quan algú guanya
+        client.On("gameFinished", (data) =>
+        {
+            var result = JsonUtility.FromJson<GameFinishedClientData>(data.ToString());
+            if (result.winnerName == AuthManager.nomUsuari)
+            {
+                // Hem guanyat nosaltres
+                metaBloquejada = true;
+            }
+            else
+            {
+                // Ha guanyat l'altre
+                metaBloquejada = true;
+                if (GameManager.Instance != null)
+                {
+                    GameManager.Instance.Defeat();
+                }
+            }
+        });
+
         yield return client.ConnectAsync();
     }
 
@@ -42,22 +94,35 @@ public class GoalZone : MonoBehaviour
     /// </summary>
     void OnTriggerEnter2D(Collider2D altre)
     {
-        // Comprovar si és un jugador (té el tag "Player")
-        if (altre.CompareTag("Player"))
+        // Si la meta està bloquejada, no es pot guanyar
+        if (metaBloquejada || jaGuanyat) return;
+
+        // Comprovar si és un jugador (té el tag "Player" o "Meta")
+        if (altre.CompareTag("Player") || altre.CompareTag("Meta"))
         {
             // Obtenir el playerId del jugador
             PlayerController jugador = altre.GetComponent<PlayerController>();
             
-            if (jugador != null && !jugadorsDins.Contains(jugador.playerId))
+            if (jugador != null)
             {
-                jugadorsDins.Add(jugador.playerId);
-                Debug.Log("Jugador entrant a la zona d'objectiu: " + jugador.playerId + 
-                          " (" + jugadorsDins.Count + "/2)");
+                string playerId = jugador.playerId;
 
-                // Comprovar si tots dos jugadors són dins
-                if (jugadorsDins.Count >= 2)
+                if (!jugadorsDins.Contains(playerId))
                 {
-                    GestionaraVictoria();
+                    jugadorsDins.Add(playerId);
+                    Debug.Log("Jugador entrant a la zona d'objectiu: " + playerId + 
+                              " (" + jugadorsDins.Count + "/2)");
+
+                    // En mode individual: quan un jugador arriba, guanya directament
+                    if (MainMenuManager.isSinglePlayer)
+                    {
+                        GestionaraVictoria();
+                    }
+                    // En multijugador: el primer que arriba guanya
+                    else if (!MainMenuManager.isSinglePlayer)
+                    {
+                        NotificarGuanyador();
+                    }
                 }
             }
         }
@@ -68,7 +133,7 @@ public class GoalZone : MonoBehaviour
     /// </summary>
     void OnTriggerExit2D(Collider2D altre)
     {
-        if (altre.CompareTag("Player"))
+        if (altre.CompareTag("Player") || altre.CompareTag("Finish"))
         {
             PlayerController jugador = altre.GetComponent<PlayerController>();
             
@@ -81,12 +146,44 @@ public class GoalZone : MonoBehaviour
     }
 
     /// <summary>
+    /// Notifica al servidor que un jugador ha guanyat (multijugador)
+    /// </summary>
+    void NotificarGuanyador()
+    {
+        if (client != null && client.Connected)
+        {
+            string roomId = LobbyManager.roomId;
+            if (string.IsNullOrEmpty(roomId))
+                roomId = MainMenuManager.roomId;
+
+            client.EmitAsync("gameFinished", new
+            {
+                roomId = roomId,
+                winnerId = AuthManager.nomUsuari,
+                winnerName = AuthManager.nomUsuari,
+                puntuacio = puntuacioVictoria
+            });
+
+            Debug.Log("Guanyador notificat: " + AuthManager.nomUsuari);
+        }
+    }
+
+    /// <summary>
     /// Gestionar l'esdeveniment de victòria quan tots dos jugadors són dins.
     /// </summary>
     void GestionaraVictoria()
     {
-        Debug.Log("VICTÒRIA! Tots dos jugadors han arrivat a la zona d'objectiu!");
+        if (jaGuanyat) return;
+        jaGuanyat = true;
+
+        Debug.Log("VICTÒRIA! Has guanyat!");
         
+        // Notificar al GameManager per mostrar pantalla de victòria
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.Victory();
+        }
+
         // Enviar la puntuació al servidor
         if (AuthManager.nomUsuari != null)
         {
@@ -96,13 +193,19 @@ public class GoalZone : MonoBehaviour
         // Notificar als jugadors via Socket.io
         if (client != null && client.Connected)
         {
-            client.EmitAsync("partidaAcabada", new
+            string roomId = LobbyManager.roomId;
+            if (string.IsNullOrEmpty(roomId))
+                roomId = MainMenuManager.roomId;
+
+            client.EmitAsync("gameFinished", new
             {
+                roomId = roomId,
+                winnerId = AuthManager.nomUsuari,
+                winnerName = AuthManager.nomUsuari,
                 puntuacio = puntuacioVictoria
             });
         }
 
-        // Mostrar missatge de victòria (pots personalitzar-ho)
         Debug.Log("Puntuació guardada: " + puntuacioVictoria);
     }
 
@@ -146,5 +249,19 @@ public class GoalZone : MonoBehaviour
         public string username;
         public int puntuacio;
         public string tipus;
+    }
+
+    [System.Serializable]
+    public class GoalStatusData
+    {
+        public bool blocked;
+        public string winner;
+    }
+
+    [System.Serializable]
+    public class GameFinishedClientData
+    {
+        public string winnerId;
+        public string winnerName;
     }
 }

@@ -16,6 +16,9 @@ public class PlayerController : MonoBehaviour
     // Velocitat del moviment del jugador
     public float velocitat = 5f;
 
+    // Punt d'inici per al respawn
+    public Transform puntInici;
+
     // Referència al component Rigidbody2D per al moviment
     private Rigidbody2D rb;
 
@@ -160,6 +163,35 @@ public class PlayerController : MonoBehaviour
             }
         });
 
+        // Escoltar l'esdeveniment de victòria/derrota
+        client.On("gameFinished", (data) =>
+        {
+            GameFinishedResponse response = JsonUtility.FromJson<GameFinishedResponse>(data.ToString());
+            
+            if (response.winnerName == AuthManager.nomUsuari)
+            {
+                Debug.Log("Has guanyat!");
+                if (GameManager.Instance != null)
+                {
+                    GameManager.Instance.Victory();
+                }
+            }
+            else
+            {
+                Debug.Log("Has perdut!");
+                if (GameManager.Instance != null)
+                {
+                    GameManager.Instance.Defeat();
+                }
+            }
+        });
+
+        // Escoltar quan un jugador és atrapat
+        client.On("playerCaught", (data) =>
+        {
+            Debug.Log("Un jugador ha estat atrapat per l'enemic!");
+        });
+
         yield return client.ConnectAsync();
 
         if (client.Connected)
@@ -236,6 +268,19 @@ public class PlayerController : MonoBehaviour
             client.DisconnectAsync();
         }
     }
+
+    public void Respawn()
+    {
+        if (puntInici != null)
+        {
+            transform.position = puntInici.position;
+        }
+        else
+        {
+            transform.position = Vector3.zero;
+        }
+        Debug.Log("Jugador tornant al punt d'inici (respawn)");
+    }
 }
 
 // Classes per deserialitzar les dades rebudes del servidor
@@ -253,4 +298,11 @@ public class PlayerPosition
     public float x;
     public float y;
     public string name;
+}
+
+[System.Serializable]
+public class GameFinishedResponse
+{
+    public string winnerId;
+    public string winnerName;
 }

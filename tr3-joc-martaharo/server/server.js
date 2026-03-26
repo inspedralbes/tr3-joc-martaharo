@@ -8,15 +8,30 @@ const mongoose = require('mongoose');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const MONGO_URI = process.env.MONGO_URI;
 
-const uri = process.env.MONGO_URI;
+// Funció per connectar amb reintents
+async function connectToMongoDB(retries = 5, delay = 3000) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      console.log(`[MONGO] Intentant connexió a MongoDB (intent ${i + 1}/${retries})...`);
+      await mongoose.connect(MONGO_URI);
+      console.log('Connectat a la base de dades joc_multijugador ✅');
+      await initializeDatabase();
+      return;
+    } catch (err) {
+      console.error(`[MONGO] Error a l'intent ${i + 1}:`, err.message);
+      if (i < retries - 1) {
+        console.log(`[MONGO] Reintentant en ${delay / 1000} segons...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  console.error('[MONGO] Error permanent: No s\'ha pogut connectar a MongoDB');
+}
 
-mongoose.connect(uri)
-  .then(async () => {
-    console.log('Connectat a la base de dades joc_multijugador ✅');
-    await initializeDatabase();
-  })
-  .catch(err => console.error('Error connectant a MongoDB ❌:', err));
+// Iniciar connexió
+connectToMongoDB();
 
 const authService = require('./services/AuthService');
 const gameService = require('./services/GameService');
@@ -58,6 +73,8 @@ const io = new Server(server, {
 
 const sessions = authController.getSessions();
 const roomPositions = {};
+const roomEnemyPositions = {};
+const roomGoalStatus = {};
 
 // =====================
 // GESTIÓ DE SOCKET.IO
@@ -77,14 +94,51 @@ io.on('connection', (socket) => {
       roomPositions[roomId] = {};
     }
 
+    // Inicialitzar estat de la meta si no existeix
+    if (!roomGoalStatus[roomId]) {
+      roomGoalStatus[roomId] = { blocked: false, winner: null };
+    }
+
     roomPositions[roomId][playerId] = { x: 0, y: 0, name: playerName };
     console.log(`[CONNEXIÓ] Jugador ${playerName} s'ha unit a la Sala ${roomId}.`);
 
     // Enviar posicions existents al nou jugador
     socket.emit('syncPositions', roomPositions[roomId]);
 
+    // Enviar estat de la meta
+    socket.emit('goalStatus', roomGoalStatus[roomId]);
+
     // Notificar a l'altre jugador que hem entrat (per al Lobby)
     socket.to(roomId).emit('jugadorEntrat', { playerId: playerId, playerName: playerName });
+  });
+
+  // Quan l'enemic es registra a la sala
+  socket.on('registerEnemy', (data) => {
+    const { roomId } = data;
+    
+    if (!roomEnemyPositions[roomId]) {
+      roomEnemyPositions[roomId] = { x: 0, y: 0 };
+    }
+
+    console.log(`[ENEMIC] Enemic registrat a la sala ${roomId}`);
+  });
+
+  // Quan l'host actualitza la posició de l'enemic
+  socket.on('enemyMoved', (data) => {
+    const { roomId, x, y } = data;
+
+    if (!roomEnemyPositions[roomId]) {
+      roomEnemyPositions[roomId] = { x: 0, y: 0 };
+    }
+    roomEnemyPositions[roomId] = { x, y };
+
+    // Sincronitzar posició de l'enemic a tots els jugadors de la sala
+    socket.to(roomId).emit('enemyMovedFromServer', {
+      x: x,
+      y: y
+    });
+
+    //console.log(`[ENEMIC] Posició sincronitzada: (${x}, ${y}) a la sala ${roomId}`);
   });
 
   // Quan un jugador actualitza la seva posició
@@ -103,11 +157,52 @@ io.on('connection', (socket) => {
       y: y
     });
 
-    console.log(`Posició rebuda de ${playerId}: (${x}, ${y}) a la sala ${roomId}`);
+    //console.log(`Posició rebuda de ${playerId}: (${x}, ${y}) a la sala ${roomId}`);
   });
 
-  // Quan un jugador es desconnecta
-  socket.on('jugadorDesconnectat', async (data) => {
+    // Quan un jugador guanya la partida
+    socket.on('gameFinished', (data) => {
+        const { roomId, winnerId, winnerName } = data;
+        
+        // Bloquejar la meta perquè l'altre jugador no pugui guanyar
+        if (roomGoalStatus[roomId]) {
+          roomGoalStatus[roomId].blocked = true;
+          roomGoalStatus[roomId].winner = winnerName;
+        }
+        
+        io.to(roomId).emit('goalStatus', roomGoalStatus[roomId]);
+        
+        io.to(roomId).emit('gameFinished', {
+            winnerId: winnerId,
+            winnerName: winnerName
+        });
+
+        io.to(roomId).emit('playerWon', {
+            winnerName: winnerName
+        });
+
+        console.log(`[VICTÒRIA] El jugador ${winnerName} ha guanyat a la sala ${roomId}`);
+    });
+
+    // Quan un jugador és atrapat per l'enemic (multijugador)
+    socket.on('playerCaught', (data) => {
+        const { roomId, playerId } = data;
+        
+        // Notificar a tots els jugadors que facin respawn
+        io.to(roomId).emit('playerCaught', {
+            playerId: playerId
+        });
+
+        // Notificar per fer respawn
+        io.to(roomId).emit('doRespawn', {
+            playerId: playerId
+        });
+
+        console.log(`[ENEMIC] El jugador ${playerId} ha estat atrapat a la sala ${roomId}`);
+    });
+
+    // Quan un jugador es desconnecta
+    socket.on('jugadorDesconnectat', async (data) => {
     const { playerId } = data;
 
     // Notificar a l'altre jugador de la mateixa sala

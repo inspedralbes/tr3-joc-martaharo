@@ -20,7 +20,6 @@ public class EnemyNetworkSync : MonoBehaviour
     // Variables per a la interpolació
     private Vector3 targetPosition;
     private Vector3 lastReceivedPosition;
-    private float networkLatency = 0.1f;
 
     // Connexió Socket.io
     private SocketIO client;
