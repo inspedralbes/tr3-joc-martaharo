@@ -67,7 +67,7 @@ public class AuthManager : MonoBehaviour
                 Debug.Log("Login correcte! Benvingut/da: " + nomUsuari);
 
                 MostrarExit("Sessió iniciada. Benvingut/da!");
-                Invoke("CanviarAMenu", 1.5f);
+                SceneManager.LoadScene("Menu");
             }
             else
             {
