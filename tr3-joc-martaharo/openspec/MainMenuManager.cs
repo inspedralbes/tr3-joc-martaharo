@@ -104,6 +104,7 @@ public class MainMenuManager : MonoBehaviour
         missatgeUnir.text = "";
     }
 
+    // Botó Crear - sense demanar nom
     public void ConfirmarCrearSala()
     {
         StartCoroutine(CrearSalaCoroutine());
@@ -157,6 +158,7 @@ public class MainMenuManager : MonoBehaviour
         missatgeUnir.text = "";
     }
 
+    // Botó Unir - amb validació de 5 lletres
     public void ConfirmarUnirSala()
     {
         string codi = campCodiSala.text.ToUpper();
