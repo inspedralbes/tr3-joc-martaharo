@@ -22,7 +22,6 @@ public class MainMenuManager : MonoBehaviour
     public GameObject panellUnirSala;
 
     [Header("Formulari Crear Sala")]
-    public TMP_InputField campNomSala;
     public TextMeshProUGUI textCodiSala;
     public TextMeshProUGUI missatgeCrear;
 
@@ -97,7 +96,6 @@ public class MainMenuManager : MonoBehaviour
         panellCrearSala.SetActive(true);
         panellUnirSala.SetActive(true);
         
-        campNomSala.text = "";
         textCodiSala.text = "";
         campCodiSala.text = "";
         missatgeCrear.text = "";
@@ -114,7 +112,7 @@ public class MainMenuManager : MonoBehaviour
         missatgeCrear.text = "Creant sala...";
         missatgeCrear.color = Color.white;
 
-        using (UnityWebRequest www = new UnityWebRequest(urlServidor + "/api/sales/crear", "POST"))
+        using (UnityWebRequest www = new UnityWebRequest(urlServidor + "/api/rooms", "POST"))
         {
             byte[] jsonToSend = new UTF8Encoding(true).GetBytes("{}");
             www.uploadHandler = new UploadHandlerRaw(jsonToSend);

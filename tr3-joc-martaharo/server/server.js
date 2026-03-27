@@ -42,7 +42,7 @@ const GameController = require('./controllers/GameController');
 const ResultController = require('./controllers/ResultController');
 
 const authController = new AuthController(authService);
-const gameController = new GameController(gameService);
+const gameController = new GameController(gameService, authController);
 const resultController = new ResultController(resultService);
 
 async function initializeDatabase() {

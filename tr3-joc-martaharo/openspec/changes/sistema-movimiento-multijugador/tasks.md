@@ -8,10 +8,15 @@
 - [x] 1.4 Validar usuari i contrasenya (amb bcrypt)
 - [x] 1.5 Retornar token de sessió
 
-- [x] 2.1 Crear ruta POST `/api/rooms` per crear sales
-- [x] 2.2 Crear ruta GET `/api/rooms` per llistar sales
-- [x] 2.3 Crear ruta POST `/api/rooms/:id/join` per unir-se
-- [x] 2.4 Emmagatzemar sales a MongoDB amb persistència
+- [x] 2.1 Crear ruta POST `/api/rooms` per crear sales (codi generat automàticament)
+- [x] 2.2 Generar codi automàtic de 5 caràcters al servidor
+- [x] 2.3 Crear ruta GET `/api/rooms` per llistar sales
+- [x] 2.4 Crear ruta POST `/api/rooms/:id/join` per unir-se
+- [x] 2.5 Emmagatzemar sales a MongoDB amb persistència
+
+- [x] 7.1 Interfície de creació de partides al menú principal
+- [x] 7.2 Botó "Crear Sala" sense camp de nom
+- [x] 7.3 Mostrar codi de sala rebut del servidor
 
 - [x] 3.1 Implementar esdeveniment `joinRoom` amb `socket.join(roomId)`
 - [x] 3.2 Gestionar `updatePosition` amb filtrat per sala
@@ -29,6 +34,8 @@
 
 - [x] 6.1 Patró Repository implementat (Punt 4.2)
 - [x] 6.2 Mode Single Player implementat
+
+- [x] 8.1 Unificació de col·leccions de base de dades (model 'User' mapejat a 'usuaris')
 
 ### Tasques Pendents 🔲
 
@@ -50,3 +57,11 @@
 - [ ] 3.1 Mesurar Round-Trip Time (RTT)
 - [ ] 3.2 Provar amb dos clients a màquines diferents
 - [ ] 3.3 Documentar resultats de rendiment
+
+## 4. Interfície de Menú Principal (Completada) ✅
+
+- [x] 4.1 Flux simplificat: crear sala sense nom
+- [x] 4.2 Codi de sala mostrat automàticament
+- [x] 4.3 Validació de codi de 5 caràcters per unir-se
+- [x] 4.4 Corregir error de creació de sala sense nom
+- [x] 4.5 Corregir mismatch de rutes API (Unity → /api/rooms)

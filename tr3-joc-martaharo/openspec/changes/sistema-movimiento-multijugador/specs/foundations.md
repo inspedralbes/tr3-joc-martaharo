@@ -24,3 +24,4 @@ Aquesta especificació cobreix:
 2. Detecció de col·lisions amb parets
 3. Sincronització de posició en temps real via Socket.io
 4. Gestió d'esdeveniments del costat del servidor per a actualitzacions de posició
+5. Sistema de multijugador basat en la creació de sales privades mitjançant un codi aleatori de 5 caràcters generat pel servidor

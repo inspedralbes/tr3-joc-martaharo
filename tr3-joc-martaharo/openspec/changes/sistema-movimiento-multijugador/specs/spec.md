@@ -25,12 +25,17 @@ El sistema HA DE permetre als jugadors identificar-se abans d'accedir al joc.
 ### Requisit: Gestió de Sales (Col·lecció `sales`)
 El sistema HA DE permetre crear, llistar i unir-se a sales de joc.
 
+**Endpoint**: `POST /api/rooms`
+- **Cos de la petició**: JSON buit `{}` (NO requereix el paràmetre `name`)
+- **Resposta**: `{"roomId": "...", "roomCode": "XXXXX"}`
+
 #### Escenari: Crear sala
-- **QUAN** l'usuari escriu un nom de sala i prem "Crear"
+- **QUAN** l'usuari prem "Crear Partida" sense introduir cap nom
 - **LLAVORS** el servidor crea un document a la col·lecció `sales`
-- **I** desa: nom_sala, id_creador, jugadors_actuals (inicialment només el creador), estat (esperant)
-- **I** retorna l'identificador de la sala
-- **I** l'usuari entra a l'escena de joc
+- **I** genera automàticament un codi de 5 caràcters
+- **I** desa: codi_sala (generat), id_creador, jugadors_actuals (inicialment només el creador), estat (esperant)
+- **I** retorna un objecte JSON amb roomId i roomCode
+- **I** el client mostra el codi de sala a la interfície
 
 #### Escenari: Llistar sales
 - **QUAN** l'usuari carrega la pantalla del Lobby
@@ -154,6 +159,8 @@ El sistema HA DE mostrar la posició de l'altre jugador de la mateixa sala.
 ---
 
 ## Models de Dades (Mongoose Schemas)
+
+**Nota**: El model Mongoose 'User' està explícitament mapejat a la col·lecció 'usuaris' mitjançant `mongoose.model('User', userSchema, 'usuaris')` per evitar la creació automàtica de la col·lecció 'users'.
 
 ### Usuari (col·lecció: `usuaris`)
 | Camp | Tipus | Descripció |

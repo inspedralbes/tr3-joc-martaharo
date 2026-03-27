@@ -4,6 +4,7 @@ El projecte és un joc cooperatiu 2D Pixel Art on dos jugadors han d'escapar d'u
 
 **Estat Actual**:
 - El servidor té gestió d'usuaris a MongoDB (base de dades `joc`, col·lecció `usuaris`)
+- El model 'User' està mapejat a la col·lecció 'usuaris' (evitant la creació automàtica de 'users')
 - El client Unity té autenticació (Login) i gestió de sales (Lobby)
 - Socket.io gestiona l'entrada a sales i sincronització de posicions
 

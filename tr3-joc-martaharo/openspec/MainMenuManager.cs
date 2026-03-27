@@ -22,7 +22,6 @@ public class MainMenuManager : MonoBehaviour
     public GameObject panellUnirSala;
 
     [Header("Formulari Crear Sala")]
-    public TMP_InputField campNomSala;
     public TextMeshProUGUI textCodiSala;
     public TextMeshProUGUI missatgeCrear;
 
@@ -97,14 +96,13 @@ public class MainMenuManager : MonoBehaviour
         panellCrearSala.SetActive(true);
         panellUnirSala.SetActive(true);
         
-        campNomSala.text = "";
         textCodiSala.text = "";
         campCodiSala.text = "";
         missatgeCrear.text = "";
         missatgeUnir.text = "";
     }
 
-    // Botó Crear - sense demanar nom
+    // Botó Crear Sala - sense demanar nom
     public void ConfirmarCrearSala()
     {
         StartCoroutine(CrearSalaCoroutine());
@@ -115,7 +113,7 @@ public class MainMenuManager : MonoBehaviour
         missatgeCrear.text = "Creant sala...";
         missatgeCrear.color = Color.white;
 
-        using (UnityWebRequest www = new UnityWebRequest(urlServidor + "/api/sales/crear", "POST"))
+        using (UnityWebRequest www = new UnityWebRequest(urlServidor + "/api/rooms", "POST"))
         {
             byte[] jsonToSend = new UTF8Encoding(true).GetBytes("{}");
             www.uploadHandler = new UploadHandlerRaw(jsonToSend);
@@ -158,7 +156,7 @@ public class MainMenuManager : MonoBehaviour
         missatgeUnir.text = "";
     }
 
-    // Botó Unir - amb validació de 5 lletres
+    // Botó Unir - amb validació de 5 caràcters
     public void ConfirmarUnirSala()
     {
         string codi = campCodiSala.text.ToUpper();
@@ -265,13 +263,6 @@ public class MainMenuManager : MonoBehaviour
     public void Tornar()
     {
         MostrarPanellPrincipal();
-    }
-
-    // Classes per a les peticions
-    [System.Serializable]
-    public class RoomRequest
-    {
-        public string nom_sala;
     }
 
     // Classes per deserialitzar respostes

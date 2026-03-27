@@ -17,6 +17,7 @@
 
 ---
 
+
 ### Pas 2: Sistema d'Autenticació (Login) ✅ COMPLET
 
 **Objectiu**: Implementar el sistema de login per validar usuaris contra la col·lecció `usuaris`.
@@ -37,14 +38,15 @@
 **Objectiu**: Permetre crear i unir-se a sales de joc, emmagatzemant a la col·lecció `sales`.
 
 **Accions**:
-- Crear ruta POST `/api/rooms` per crear sales
-- Emmagatzemar: nom_sala, id_creador, jugadors_actuals, estat
+- Crear ruta POST `/api/rooms` per crear sales (codi generat automàticament)
+- El servidor genera automàticament un codi de 5 caràcters
+- Emmagatzemar: codi_sala, id_creador, jugadors_actuals, estat
 - Crear ruta GET `/api/rooms` per llistar sales
 - Crear ruta POST `/api/rooms/:id/join` per unir-se
 - Actualitzar `jugadors_actuals` (màxim 2) i `estat` (esperant/jugant)
 - **Codi aleatori de 5 caràcters** per identificar sales
 
-**Entregable**: Jugadors poden crear i unir-se a sales persistides
+**Entregable**: Jugadors poden crear i unir-se a sales sense necessitat d'escriure un nom
 
 ---
 
@@ -141,6 +143,17 @@
 - Documentar resultats
 
 **Entregable**: Informe de rendiment
+
+---
+
+## Estatus del Projecte
+
+La creació de sales ja no requereix un "Nom de sala", s'ha simplificat el flux per a millorar l'experiència d'usuari. Ara el servidor genera automàticament un codi de 5 caràcters quan es crea una sala.
+
+**Correcció de rutes API**: S'ha unificat les rutes entre client (Unity) i servidor:
+- Client Unity: `/api/rooms` (POST per crear sala)
+- Servidor: `/api/rooms` (POST per crear sala)
+- El model 'User' segueix apuntant a la col·lecció 'usuaris'
 
 ---
 
