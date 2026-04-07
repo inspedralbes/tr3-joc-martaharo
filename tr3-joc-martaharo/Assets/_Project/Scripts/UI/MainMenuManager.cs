@@ -34,6 +34,7 @@ public class MainMenuManager : MonoBehaviour
     public static string roomCode { get; private set; }
     public static string nomSala { get; private set; }
     public static bool isSinglePlayer { get; private set; }
+    public static string playerNumber { get; private set; }
 
     void Start()
     {
@@ -136,6 +137,9 @@ public class MainMenuManager : MonoBehaviour
                 missatgeCrear.color = Color.green;
 
                 Debug.Log("Sala multiplayer creada: " + roomCode);
+
+                yield return new WaitForSeconds(2f);
+                SceneManager.LoadScene("Lobby");
             }
             else
             {
@@ -143,6 +147,27 @@ public class MainMenuManager : MonoBehaviour
                 missatgeCrear.text = "Error al crear la sala.";
                 missatgeCrear.color = Color.red;
             }
+        }
+    }
+
+    public void CopiarCodiAlPortapapers()
+    {
+        if (!string.IsNullOrEmpty(roomCode))
+        {
+            GUIUtility.systemCopyBuffer = roomCode;
+            missatgeCrear.text = "Codi copiat!";
+            missatgeCrear.color = Color.yellow;
+            Debug.Log("Codi copiat al portapapers: " + roomCode);
+        }
+    }
+
+    IEnumerator RestaurarMissatgeCrear()
+    {
+        yield return new WaitForSeconds(1f);
+        if (!string.IsNullOrEmpty(roomCode))
+        {
+            missatgeCrear.text = "Sala creada! Comparteix el codi amb el teu company.";
+            missatgeCrear.color = Color.green;
         }
     }
 
@@ -212,7 +237,7 @@ public class MainMenuManager : MonoBehaviour
                 }
                 else
                 {
-                    missatgeUnir.text = "Sala no trobada. Comprova el codi.";
+                    missatgeUnir.text = "Aquesta sala no existeix";
                     missatgeUnir.color = Color.red;
                 }
             }
@@ -245,7 +270,7 @@ public class MainMenuManager : MonoBehaviour
                 missatgeUnir.color = Color.green;
 
                 yield return new WaitForSeconds(1f);
-                SceneManager.LoadScene("Joc");
+                SceneManager.LoadScene("Lobby");
             }
             else
             {

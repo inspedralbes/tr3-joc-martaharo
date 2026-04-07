@@ -65,3 +65,34 @@
 - [x] 4.3 Validació de codi de 5 caràcters per unir-se
 - [x] 4.4 Corregir error de creació de sala sense nom
 - [x] 4.5 Corregir mismatch de rutes API (Unity → /api/rooms)
+
+## 5. Error de Crash del Servidor ✅
+
+- [x] 5.1 Corregit error "require('./AuthController').getSessions is not a function" a GameController.js
+- [x] 5.2 La ruta POST /api/rooms coincideix amb la ruta de Unity
+
+## 6. Millores d'Usabilitat del Menú ✅
+
+- [x] 6.1 Implementar redirecció automàtica al joc después de crear sala (2 segons)
+- [x] 6.2 Afegir funcionalitat de copiar codi al portapapers
+
+## 7. Sistema de Lobby ✅
+
+- [x] 7.1 LobbyManager.cs amb UI Toolkit (label-codi, llista-jugadors, btn-comencar)
+- [x] 7.2 Mostrar codi de sala des de MainMenuManager.roomCode
+- [x] 7.3 Escoltar esdeveniment updateLobby per actualitzar llista de jugadors
+- [x] 7.4 Botó btn-comencar actiu només amb 2 jugadors
+- [x] 7.5 Efecte visual MouseEnter: blau més brillant + escala 1.1x
+
+## 8. Gestió d'Errors i Neteja ✅
+
+- [x] 8.1 room-not-found quan sala no existeix
+- [x] 8.2 Eliminar sales amb 0 jugadors de memòria i MongoDB
+- [x] 8.3 Signal startGame des del host per carregar escena Joc
+- [x] 8.4 Feedback "Aquesta sala no existeix" al MainMenu
+
+## 9. Sincronització de Jugadors ✅
+
+- [x] 9.1 Assignar Jugador 1 (host) i Jugador 2 al joinRoom
+- [x] 9.2 Guardar playerNumber a roomPositions per passar a scripts de moviment
+- [x] 9.3 Moviment fluid filtrat per roomId

@@ -37,14 +37,17 @@ class GameController {
 
   async createRoom(req, res) {
     const token = req.headers.authorization?.replace('Bearer ', '');
-    const sessions = this.authController.getSessions();
     
-    if (!token || !sessions[token]) {
+    if (!token) {
       return res.status(401).json({ error: 'Cal iniciar sessió' });
     }
 
+    const sessions = this.authController.getSessions();
     const session = sessions[token];
-    // El nom de sala ja no és obligatori - el servidor genera el codi automàticament
+    
+    if (!session) {
+      return res.status(401).json({ error: 'Cal iniciar sessió' });
+    }
     
     try {
       console.log('[SERVICE] Creant sala multiplayer...');

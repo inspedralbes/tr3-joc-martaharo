@@ -56,7 +56,7 @@ public class GoalZone : MonoBehaviour
             metaBloquejada = status.blocked;
             guanyador = status.winner;
 
-            if (metaBloquejada && guanyador != AuthManager.nomUsuari)
+            if (metaBloquejada && guanyador != AuthManager.username)
             {
                 Debug.Log("La meta està bloquejada. Has perdut!");
                 if (GameManager.Instance != null)
@@ -70,7 +70,7 @@ public class GoalZone : MonoBehaviour
         client.On("gameFinished", (data) =>
         {
             var result = JsonUtility.FromJson<GameFinishedClientData>(data.ToString());
-            if (result.winnerName == AuthManager.nomUsuari)
+            if (result.winnerName == AuthManager.username)
             {
                 // Hem guanyat nosaltres
                 metaBloquejada = true;
@@ -159,12 +159,12 @@ public class GoalZone : MonoBehaviour
             client.EmitAsync("gameFinished", new
             {
                 roomId = roomId,
-                winnerId = AuthManager.nomUsuari,
-                winnerName = AuthManager.nomUsuari,
+                winnerId = AuthManager.username,
+                winnerName = AuthManager.username,
                 puntuacio = puntuacioVictoria
             });
 
-            Debug.Log("Guanyador notificat: " + AuthManager.nomUsuari);
+            Debug.Log("Guanyador notificat: " + AuthManager.username);
         }
     }
 
@@ -185,9 +185,9 @@ public class GoalZone : MonoBehaviour
         }
 
         // Enviar la puntuació al servidor
-        if (AuthManager.nomUsuari != null)
+        if (AuthManager.username != null)
         {
-            StartCoroutine(EnviarPuntuacio(AuthManager.nomUsuari, puntuacioVictoria));
+            StartCoroutine(EnviarPuntuacio(AuthManager.username, puntuacioVictoria));
         }
 
         // Notificar als jugadors via Socket.io
@@ -200,8 +200,8 @@ public class GoalZone : MonoBehaviour
             client.EmitAsync("gameFinished", new
             {
                 roomId = roomId,
-                winnerId = AuthManager.nomUsuari,
-                winnerName = AuthManager.nomUsuari,
+                winnerId = AuthManager.username,
+                winnerName = AuthManager.username,
                 puntuacio = puntuacioVictoria
             });
         }

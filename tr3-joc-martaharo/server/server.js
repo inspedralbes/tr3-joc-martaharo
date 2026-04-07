@@ -75,6 +75,8 @@ const sessions = authController.getSessions();
 const roomPositions = {};
 const roomEnemyPositions = {};
 const roomGoalStatus = {};
+const roomPlayers = {};
+const hostPlayer = {};
 
 // =====================
 // GESTIÓ DE SOCKET.IO
@@ -94,13 +96,34 @@ io.on('connection', (socket) => {
       roomPositions[roomId] = {};
     }
 
+    // Inicialitzar gestor de jugadors si no existeix
+    if (!roomPlayers[roomId]) {
+      roomPlayers[roomId] = [];
+    }
+
+    // Assignar número de jugador (1 o 2)
+    let playerNumber = 'Jugador 1';
+    if (roomPlayers[roomId].length === 0) {
+      hostPlayer[roomId] = playerId; // Primer jugador és el host
+      playerNumber = 'Jugador 1';
+    } else if (roomPlayers[roomId].length === 1) {
+      playerNumber = 'Jugador 2';
+    }
+
+    // Afegir jugador a la llista
+    roomPlayers[roomId].push({ id: playerId, name: playerName, playerNumber: playerNumber });
+
     // Inicialitzar estat de la meta si no existeix
     if (!roomGoalStatus[roomId]) {
       roomGoalStatus[roomId] = { blocked: false, winner: null };
     }
 
-    roomPositions[roomId][playerId] = { x: 0, y: 0, name: playerName };
-    console.log(`[CONNEXIÓ] Jugador ${playerName} s'ha unit a la Sala ${roomId}.`);
+    roomPositions[roomId][playerId] = { x: 0, y: 0, name: playerName, playerNumber: playerNumber };
+    console.log(`[CONNEXIÓ] ${playerName} s'ha unit a la Sala ${roomId} com ${playerNumber}`);
+
+    // Notificar a tots els jugadors de la sala (inclòs el propi) amb updateLobby
+    const playersList = roomPlayers[roomId].map(p => ({ name: p.name, playerNumber: p.playerNumber }));
+    io.to(roomId).emit('updateLobby', { players: playersList });
 
     // Enviar posicions existents al nou jugador
     socket.emit('syncPositions', roomPositions[roomId]);
@@ -109,7 +132,7 @@ io.on('connection', (socket) => {
     socket.emit('goalStatus', roomGoalStatus[roomId]);
 
     // Notificar a l'altre jugador que hem entrat (per al Lobby)
-    socket.to(roomId).emit('jugadorEntrat', { playerId: playerId, playerName: playerName });
+    socket.to(roomId).emit('jugadorEntrat', { playerId: playerId, playerName: playerName, playerNumber: playerNumber });
   });
 
   // Quan l'enemic es registra a la sala
@@ -201,9 +224,22 @@ io.on('connection', (socket) => {
         console.log(`[ENEMIC] El jugador ${playerId} ha estat atrapat a la sala ${roomId}`);
     });
 
+    // Quan el host clica "Començar" - inicia la partida
+    socket.on('startGame', (data) => {
+        const { roomId } = data;
+        
+        // Verificar que som el host
+        if (hostPlayer[roomId] === playerId) {
+            console.log(`[GAME] El host inicia la partida a la sala ${roomId}`);
+            io.to(roomId).emit('startGame', { roomId: roomId });
+        }
+    });
+
     // Quan un jugador es desconnecta
     socket.on('jugadorDesconnectat', async (data) => {
     const { playerId } = data;
+
+    let roomIdToCleanup = null;
 
     // Notificar a l'altre jugador de la mateixa sala
     for (const [roomId, positions] of Object.entries(roomPositions)) {
@@ -213,23 +249,57 @@ io.on('connection', (socket) => {
         // Eliminar el jugador de les posicions
         delete roomPositions[roomId][playerId];
         
+        // Eliminar de roomPlayers
+        if (roomPlayers[roomId]) {
+            roomPlayers[roomId] = roomPlayers[roomId].filter(p => p.id !== playerId);
+        }
+        
         // Notificar a la sala
         io.to(roomId).emit('jugadorDesconnectat', { playerId: playerId });
 
-        console.log(`[DESCONNEXIÓ] El jugador ${playerName} ha marxat. Sala ${roomId} tancada.`);
+        // Notificar updateLobby
+        if (roomPlayers[roomId]) {
+            const playersList = roomPlayers[roomId].map(p => ({ name: p.name, playerNumber: p.playerNumber }));
+            io.to(roomId).emit('updateLobby', { players: playersList });
+        }
 
-        // Actualitzar la sala a MongoDB: treure el jugador
-        try {
-          await Sala.findOneAndUpdate(
-            { _id: roomId, jugadors_actuals: { $in: [Object.keys(positions).find(k => k !== playerId)] } },
-            { $pull: { jugadors_actuals: Object.values(positions).find(p => p.name)?.name } },
-            { new: true }
-          );
-        } catch (err) {
-          console.error('Error actualitzant la sala:', err);
+        console.log(`[DESCONNEXIÓ] El jugador ${playerName} ha marxat de la sala ${roomId}.`);
+
+        // Si no queden jugadors, eliminar la sala completament
+        if (!roomPlayers[roomId] || roomPlayers[roomId].length === 0) {
+            roomIdToCleanup = roomId;
+            console.log(`[CLEANUP] Eliminant sala ${roomId} (0 jugadors)`);
+            
+            // Eliminar de MongoDB
+            try {
+                await Sala.findByIdAndDelete(roomId);
+                console.log(`[DB] Sala ${roomId} eliminada de la base de dades`);
+            } catch (err) {
+                console.error('Error eliminant la sala:', err);
+            }
+        } else {
+            // Actualitzar la sala a MongoDB: treure el jugador
+            try {
+              await Sala.findByIdAndUpdate(
+                roomId,
+                { $pull: { jugadors_actuals: playerName } },
+                { new: true }
+              );
+            } catch (err) {
+              console.error('Error actualitzant la sala:', err);
+            }
         }
         break;
       }
+    }
+
+    // Netejar dades de la sala buida
+    if (roomIdToCleanup) {
+        delete roomPositions[roomIdToCleanup];
+        delete roomEnemyPositions[roomIdToCleanup];
+        delete roomGoalStatus[roomIdToCleanup];
+        delete roomPlayers[roomIdToCleanup];
+        delete hostPlayer[roomIdToCleanup];
     }
   });
 
@@ -261,6 +331,21 @@ app.post('/api/rooms/single', (req, res) => gameController.createSinglePlayer(re
 app.post('/api/rooms', (req, res) => gameController.createRoom(req, res));
 app.get('/api/rooms', (req, res) => gameController.getRooms(req, res));
 app.post('/api/rooms/:roomId/join', (req, res) => gameController.joinRoom(req, res));
+
+// Ruta per verificar si una sala existeix (per room-not-found)
+app.get('/api/rooms/:roomId', async (req, res) => {
+    const { roomId } = req.params;
+    try {
+        const Sala = require('./models/Sala');
+        const sala = await Sala.findById(roomId);
+        if (!sala) {
+            return res.status(404).json({ error: 'Sala no trobada' });
+        }
+        res.json({ exists: true, room: sala });
+    } catch (err) {
+        res.status(404).json({ error: 'Sala no trobada' });
+    }
+});
 
 // =====================
 // RUTES DE RÀNQUINGS (CONTROLLER)

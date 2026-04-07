@@ -106,9 +106,9 @@ public class PlayerController : MonoBehaviour
         }
 
         // Assignar el nom d'usuari (des d'AuthManager)
-        if (AuthManager.nomUsuari != null)
+        if (AuthManager.username != null)
         {
-            nomUsuariText.text = AuthManager.nomUsuari;
+            nomUsuariText.text = AuthManager.username;
         }
         else
         {
@@ -168,7 +168,7 @@ public class PlayerController : MonoBehaviour
         {
             GameFinishedResponse response = JsonUtility.FromJson<GameFinishedResponse>(data.ToString());
             
-            if (response.winnerName == AuthManager.nomUsuari)
+            if (response.winnerName == AuthManager.username)
             {
                 Debug.Log("Has guanyat!");
                 if (GameManager.Instance != null)
@@ -204,7 +204,7 @@ public class PlayerController : MonoBehaviour
             {
                 roomId = roomId,
                 playerId = playerId,
-                playerName = AuthManager.nomUsuari ?? playerId
+                playerName = AuthManager.username ?? playerId
             });
         }
         else

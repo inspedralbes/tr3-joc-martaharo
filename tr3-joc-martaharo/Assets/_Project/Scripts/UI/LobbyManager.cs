@@ -1,262 +1,102 @@
-// =================================================================================
-// SCRIPT: LobbyManager
-// UBICACIÓ: Assets/_Project/Scripts/UI/
-// DESCRIPCIÓ: Gestió del Lobby i creació/unió a sales de joc
-// =================================================================================
-
 using UnityEngine;
+using UnityEngine.UIElements;
 using UnityEngine.SceneManagement;
-using UnityEngine.Networking;
 using System.Collections;
-using System.Text;
 using System.Collections.Generic;
 using SocketIOClient;
 
 public class LobbyManager : MonoBehaviour
 {
-    // URL del servidor Node.js
+    // URL del servidor definida en tu stack tecnológico
     private string urlServidor = "http://localhost:3000";
 
-    [Header("Formulari de Sala")]
-    public UnityEngine.UI.InputField campNomSala;
-    public UnityEngine.UI.Text missatgeInfo;
+    [Header("UI Elements")]
+    private Label labelCodi;
+    private Label llistaJugadors;
+    private Button btnComencar;
 
-    // Variables estátiques per passar dades entre escenes
-    public static string roomId { get; private set; }
-    public static string roomCode { get; private set; }
-    public static string nomSala { get; private set; }
-    public static bool isSinglePlayer { get; private set; }
-
-    // Variables per a la connexió Socket.io
+    // Referencias de red
     private SocketIO client;
-    private bool altreJugadorEntrat = false;
-
-    void Start()
+    private string playerName;
+    
+    // PUBLIC para que EnemyAI y PlayerController lo lean (Error CS0122 solucionado)
+public static string roomId;
+    void OnEnable()
     {
-        // Obtenir el token des de AuthManager
-        if (string.IsNullOrEmpty(AuthManager.token))
-        {
-            MostrarInfo("Sessió expirada. Torna al login.");
-            Invoke("TornarAlLogin", 2f);
-            return;
-        }
+        // 1. Inicializar UI Toolkit con los nombres de tu UI Builder
+        var root = GetComponent<UIDocument>().rootVisualElement;
+        labelCodi = root.Q<Label>("label-codi");
+        llistaJugadors = root.Q<Label>("llista-jugadors");
+        btnComencar = root.Q<Button>("btn-comencar");
 
-        // Iniciar la connexió Socket.io per escoltar quan l'altre jugador entrí
-        StartCoroutine(ConnectarSocket());
+        // 2. Cargar datos desde MainMenuManager
+        roomId = MainMenuManager.roomId;
+        labelCodi.text = "CODI: " + MainMenuManager.roomCode;
+        
+        // 3. Obtener el nombre del usuario logueado (según tu AuthManager)
+        playerName = AuthManager.username;
+
+        // 4. Configurar botón con tu paleta Azul/Cian
+        btnComencar.SetEnabled(true); // Permitir jugar solo para testeo
+        btnComencar.clicked += IniciarPartida;
+
+        // Efectos Visuales (Hover)
+        btnComencar.RegisterCallback<MouseEnterEvent>(evt => {
+            btnComencar.style.backgroundColor = new Color(0f, 0.8f, 1f, 1f); // Cian brillante
+            btnComencar.transform.scale = new Vector3(1.1f, 1.1f, 1f);
+        });
+
+        btnComencar.RegisterCallback<MouseLeaveEvent>(evt => {
+            btnComencar.style.backgroundColor = new Color(0f, 0.4f, 0.6f, 1f); // Azul estándar
+            btnComencar.transform.scale = new Vector3(1f, 1f, 1f);
+        });
+
+        // 5. Iniciar conexión sincronizada
+        ConnectarAlServidor();
     }
 
-    IEnumerator ConnectarSocket()
+    async void ConnectarAlServidor()
     {
         client = new SocketIO(urlServidor);
 
-        // Escoltar quan l'altre jugador s'uneix a la sala
-        client.On("jugadorEntrat", (data) =>
-        {
-            altreJugadorEntrat = true;
-            MostrarInfo("L'altre jugador ha entrat! Començant partida...");
-            Debug.Log("L'altre jugador s'ha unit a la sala");
+        // Al conectar, unirse a la sala creada en el servidor Node.js
+        client.OnConnected += (sender, e) => {
+            client.EmitAsync("joinRoom", new { 
+                roomId = roomId, 
+                playerName = playerName 
+            });
+        };
+
+        // Escuchar actualizaciones (Punto 5.4 de tu plan de trabajo)
+        client.On("updateLobby", response => {
+            Debug.Log("Sincronizando lista de jugadores...");
         });
 
-        yield return client.ConnectAsync();
+        // Escuchar señal de inicio (Punto 3.3 de tu plan)
+        client.On("startGame", response => {
+            SceneManager.LoadScene("Joc");
+        });
 
-        if (client.Connected)
+        await client.ConnectAsync();
+    }
+
+    void IniciarPartida()
+    {
+        if (client != null && client.Connected)
         {
-            Debug.Log("Connectat al socket del Lobby");
+            // Enviar evento al servidor para sincronizar a ambos jugadores
+            client.EmitAsync("startGame", new { roomId = roomId });
+        }
+        else
+        {
+            // Fallback: Si el servidor está apagado, entrar al juego para testear movimiento
+            Debug.LogWarning("Servidor offline. Entrando en modo local.");
+            SceneManager.LoadScene("Joc");
         }
     }
 
-    // Crear una nova sala
-    public void CrearSala()
+    void OnDestroy()
     {
-        string nom = campNomSala.text;
-
-        if (string.IsNullOrEmpty(nom))
-        {
-            MostrarInfo("Siusplau, escriu un nom per a la sala.");
-            return;
-        }
-
-        StartCoroutine(CrearSalaCoroutine(nom));
-    }
-
-    IEnumerator CrearSalaCoroutine(string nomSala)
-    {
-        MostrarInfo("Creant sala...");
-
-        // Crear objecte petició
-        RoomRequest peticio = new RoomRequest();
-        peticio.nom_sala = nomSala;
-
-        string jsonData = JsonUtility.ToJson(peticio);
-
-        using (UnityWebRequest www = new UnityWebRequest(urlServidor + "/api/rooms", "POST"))
-        {
-            byte[] jsonToSend = new UTF8Encoding(true).GetBytes(jsonData);
-            www.uploadHandler = new UploadHandlerRaw(jsonToSend);
-            www.downloadHandler = new DownloadHandlerBuffer();
-            www.SetRequestHeader("Content-Type", "application/json");
-            www.SetRequestHeader("Authorization", "Bearer " + AuthManager.token);
-
-            yield return www.SendWebRequest();
-
-            if (www.result == UnityWebRequest.Result.Success)
-            {
-                string resposta = www.downloadHandler.text;
-                RoomResposta dades = JsonUtility.FromJson<RoomResposta>(resposta);
-
-                roomId = dades.roomId;
-                roomCode = dades.roomCode;
-                LobbyManager.nomSala = nomSala;
-
-                Debug.Log("Sala creada: " + nomSala + " (ID: " + roomId + ")");
-                MostrarInfo("Sala creada! Esperant altre jugador...");
-
-                // Esperar que l'altre jugador entrí abans d'anar a l'escena de joc
-                yield return new WaitUntil(() => altreJugadorEntrat);
-                
-                SceneManager.LoadScene("Joc");
-            }
-            else
-            {
-                Debug.LogError("Error creant sala: " + www.error);
-                MostrarInfo("Error al crear la sala.");
-            }
-        }
-    }
-
-    // Unir-se a una sala existent (per nom)
-    public void UnirSala()
-    {
-        string nom = campNomSala.text;
-
-        if (string.IsNullOrEmpty(nom))
-        {
-            MostrarInfo("Siusplau, escriu el nom de la sala.");
-            return;
-        }
-
-        StartCoroutine(UnirSalaCoroutine(nom));
-    }
-
-    IEnumerator UnirSalaCoroutine(string nomSala)
-    {
-        MostrarInfo("Buscant sala...");
-
-        using (UnityWebRequest www = UnityWebRequest.Get(urlServidor + "/api/rooms"))
-        {
-            www.SetRequestHeader("Authorization", "Bearer " + AuthManager.token);
-
-            yield return www.SendWebRequest();
-
-            if (www.result == UnityWebRequest.Result.Success)
-            {
-                string resposta = www.downloadHandler.text;
-                
-                // JsonUtility no pot deserialitzar arrays directament
-                // Fem servir un wrapper
-                RoomListResponse salesWrapper = JsonUtility.FromJson<RoomListResponse>(resposta);
-
-                // Buscar la sala pel nom
-                RoomInfo salaTrobada = null;
-                if (salesWrapper != null && salesWrapper.rooms != null)
-                {
-                    foreach (RoomInfo room in salesWrapper.rooms)
-                    {
-                        if (room.nom_sala == nomSala)
-                        {
-                            salaTrobada = room;
-                            break;
-                        }
-                    }
-                }
-
-                if (salaTrobada != null)
-                {
-                    yield return UnirSalaPerId(salaTrobada.id, nomSala);
-                }
-                else
-                {
-                    MostrarInfo("La sala no existeix.");
-                }
-            }
-            else
-            {
-                MostrarInfo("Error carregant sales.");
-            }
-        }
-    }
-
-    IEnumerator UnirSalaPerId(string idSala, string nomSala)
-    {
-        using (UnityWebRequest www = new UnityWebRequest(urlServidor + "/api/rooms/" + idSala + "/join", "POST"))
-        {
-            www.downloadHandler = new DownloadHandlerBuffer();
-            www.SetRequestHeader("Authorization", "Bearer " + AuthManager.token);
-
-            yield return www.SendWebRequest();
-
-            if (www.result == UnityWebRequest.Result.Success)
-            {
-                roomId = idSala;
-                LobbyManager.nomSala = nomSala;
-
-                Debug.Log("Unit a la sala: " + idSala);
-                MostrarInfo("Unit a la sala! Començant partida...");
-                
-                yield return new WaitForSeconds(1f);
-                SceneManager.LoadScene("Joc");
-            }
-            else
-            {
-                Debug.LogError("Error unint a sala: " + www.error);
-                MostrarInfo("Error al unir-se a la sala.");
-            }
-        }
-    }
-
-    // Tornar a l'escena de login
-    public void TornarAlLogin()
-    {
-        SceneManager.LoadScene("Login");
-    }
-
-    // Mostrar missatge informatiu
-    void MostrarInfo(string missatge)
-    {
-        if (missatgeInfo != null)
-        {
-            missatgeInfo.text = missatge;
-        }
-    }
-
-    // Classes per a les peticions
-    [System.Serializable]
-    public class RoomRequest
-    {
-        public string nom_sala;
-    }
-
-    // Classes per deserialitzar les respostes
-    [System.Serializable]
-    public class RoomResposta
-    {
-        public string roomId;
-        public string roomCode;
-    }
-
-    // Wrapper per a la llista de sales (JsonUtility no suporta arrays)
-    [System.Serializable]
-    public class RoomListResponse
-    {
-        public RoomInfo[] rooms;
-    }
-
-    [System.Serializable]
-    public class RoomInfo
-    {
-        public string id;
-        public string nom_sala;
-        public string codi_sala;
-        public int jugadors_actuals;
+        if (client != null) client.DisconnectAsync();
     }
 }

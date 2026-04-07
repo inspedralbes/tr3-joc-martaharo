@@ -82,7 +82,7 @@ public class NetworkManager : MonoBehaviour
             var response = JsonUtility.FromJson<GameFinishedData>(data.ToString());
             if (GameManager.Instance != null)
             {
-                if (response.winnerName == AuthManager.nomUsuari)
+                if (response.winnerName == AuthManager.username)
                 {
                     GameManager.Instance.Victory();
                 }
@@ -104,7 +104,7 @@ public class NetworkManager : MonoBehaviour
             {
                 roomId = currentRoomId,
                 playerId = playerId,
-                playerName = AuthManager.nomUsuari ?? "Unknown"
+                playerName = AuthManager.username ?? "Unknown"
             });
         }
         else
@@ -135,7 +135,7 @@ public class NetworkManager : MonoBehaviour
             {
                 roomId = currentRoomId,
                 winnerId = playerId,
-                winnerName = AuthManager.nomUsuari
+                winnerName = AuthManager.username
             });
         }
     }

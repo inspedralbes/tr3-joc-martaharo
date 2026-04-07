@@ -49,7 +49,7 @@ public class GameManager : MonoBehaviour
         client.On("gameFinished", (data) =>
         {
             GameFinishedResponse response = JsonUtility.FromJson<GameFinishedResponse>(data.ToString());
-            if (response.winnerId == AuthManager.nomUsuari)
+            if (response.winnerId == AuthManager.username)
             {
                 Victory();
             }
@@ -62,7 +62,7 @@ public class GameManager : MonoBehaviour
         client.On("playerWon", (data) =>
         {
             PlayerWinResponse response = JsonUtility.FromJson<PlayerWinResponse>(data.ToString());
-            if (response.winnerName == AuthManager.nomUsuari)
+            if (response.winnerName == AuthManager.username)
             {
                 Victory();
             }
@@ -100,8 +100,8 @@ public class GameManager : MonoBehaviour
             client.EmitAsync("gameFinished", new
             {
                 roomId = roomId,
-                winnerId = AuthManager.nomUsuari,
-                winnerName = AuthManager.nomUsuari
+                winnerId = AuthManager.username,
+                winnerName = AuthManager.username
             });
         }
     }

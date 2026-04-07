@@ -15,7 +15,7 @@ public class AuthManager : MonoBehaviour
     public TextMeshProUGUI missatgeError;
 
     public static string token { get; private set; }
-    public static string nomUsuari { get; private set; }
+    public static string username { get; private set; }
 
     public void FerLogin()
     {
@@ -62,9 +62,9 @@ public class AuthManager : MonoBehaviour
                 LoginResposta dadesResposta = JsonUtility.FromJson<LoginResposta>(resposta);
 
                 token = dadesResposta.token;
-                nomUsuari = dadesResposta.username;
+                username = dadesResposta.username;
 
-                Debug.Log("Login correcte! Benvingut/da: " + nomUsuari);
+                Debug.Log("Login correcte! Benvingut/da: " + username);
 
                 MostrarExit("Sessió iniciada. Benvingut/da!");
                 SceneManager.LoadScene("Menu");
@@ -138,9 +138,9 @@ public class AuthManager : MonoBehaviour
                 LoginResposta dadesResposta = JsonUtility.FromJson<LoginResposta>(resposta);
 
                 token = dadesResposta.token;
-                nomUsuari = dadesResposta.username;
+                username = dadesResposta.username;
 
-                Debug.Log("Registre correcte! Benvingut/da: " + nomUsuari);
+                Debug.Log("Registre correcte! Benvingut/da: " + username);
                 
                 MostrarExit("Usuari creat correctament!");
                 
@@ -186,7 +186,7 @@ public class AuthManager : MonoBehaviour
     public void TancarSessio()
     {
         token = null;
-        nomUsuari = null;
+        username = null;
         SceneManager.LoadScene("Login");
     }
 
