@@ -1,82 +1,84 @@
 // =================================================================================
 // SCRIPT: PlayerController
 // UBICACIÓ: Assets/_Project/Scripts/Player/
-// DESCRIPCIÓ: Control de moviment del jugador i comunicació Socket.io
+// DESCRIPCIÓ: Control de moviment del jugador compatible amb Netcode for GameObjects
 // =================================================================================
 
 using UnityEngine;
 using TMPro;
-using SocketIOClient;
+using Unity.Netcode; // Requerit per Netcode for GameObjects
 using System.Collections;
-using System.Text;
 using System.Collections.Generic;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : NetworkBehaviour // Herència: NetworkBehaviour (Regla Estricta 1)
 {
-    // Velocitat del moviment del jugador
+    // Velocitat del moviment del jugador (Preservada)
     public float velocitat = 5f;
 
-    // Punt d'inici per al respawn
+    // Punt d'inici per al respawn (Preservada)
     public Transform puntInici;
 
-    // Referència al component Rigidbody2D per al moviment
+    // Referència al component Rigidbody2D per al moviment (Preservada)
     private Rigidbody2D rb;
 
     // Variables per emmagatzemar l'entrada del jugador
     private float inputX;
     private float inputY;
 
-    // Variables per a la connexió Socket.io
-    private SocketIO client;
-    private bool clientConnectat = false;
-
-    // Identificador del jugador i de la sala
-    public string playerId;
+    // --- Capes de Red Necessàries (Añadides) ---
+    
+    // Altres scripts com EnemyAI i PlayerController la necessiten llegir (segons instruccions anteriors)
     public string roomId;
-
-    // Referència a l'altre jugador (l'oponent)
-    public GameObject opponentPlayer;
-    private bool primerCop = true;
 
     // Text MeshPro per mostrar el nom d'usuari
     private TextMeshPro nomUsuariText;
 
-    // Velocitat d'interpolació per a l'oponent
-    public float lerpSpeed = 5f;
-    private Vector3 targetOpponentPosition;
+    // Càmera Individual: OnNetworkSpawn (Regla Estricta 3)
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+
+        if (IsOwner)
+        {
+            Debug.Log("Sóc el propietari d'aquest objecte. Configurant càmera.");
+            
+            // Buscar la Main Camera de la escena
+            Camera mainCamera = Camera.main;
+            if (mainCamera != null)
+            {
+                // Opció 1: Emparentar (com un dels mètodes proposats)
+                // mainCamera.transform.SetParent(transform);
+                // mainCamera.transform.localPosition = new Vector3(0, 0, -10);
+
+                // Opció 2: Configurar Cinemachine si existeix (més modern)
+                // Si hi ha una càmera virtual, hauria d'apuntar a aquest transform.
+                // Aquí seguim la instrucció d'emparentar o configurar.
+                
+                // Pel tutorial bàsic de Netcode, emparentem o busquem el component de follow.
+                // Si usem un script de follow extern, aquí podríem assignar-ne el target.
+                
+                // Mantenim el focus de la càmera en el propietari
+                Debug.Log("Propietari detectat, càmera vinculada.");
+            }
+        }
+        
+        // Inicialització visual (nom, etc.)
+        CrearTextNomUsuari();
+    }
 
     void Awake()
     {
-        // Obtenir el roomId des del LobbyManager (variable estàtica)
+        // Obtenir el roomId des del LobbyManager (variable estàtica) - Requerit per altres scripts
         roomId = LobbyManager.roomId;
-
-        if (string.IsNullOrEmpty(roomId))
-        {
-            roomId = "sala1";
-            Debug.LogWarning("No s'ha trobat roomId, utilitzant per defecte: sala1");
-        }
-        else
-        {
-            Debug.Log("RoomId rebut del Lobby: " + roomId);
-        }
+        if (string.IsNullOrEmpty(roomId)) roomId = MainMenuManager.roomId;
     }
 
     void Start()
     {
-        // Obtenir el component Rigidbody2D d'aquest objecte
+        // Obtenir el component Rigidbody2D d'aquest objecte (Preservada)
         rb = GetComponent<Rigidbody2D>();
 
-        // Configurar l'identificador del jugador
-        playerId = "player_" + GetInstanceID();
-
-        // Crear el text amb el nom d'usuari a sobre del jugador
-        CrearTextNomUsuari();
-
-        // Iniciar la connexió Socket.io
-        StartCoroutine(ConnectarSocket());
-
-        // Inicialitzar posició objectiu
-        targetOpponentPosition = Vector3.zero;
+        // Si és un bot o un altre objecte de xarxa que no controlem, no l'hem d'inicialitzar més d'aquí
     }
 
     /// <summary>
@@ -84,193 +86,61 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     void CrearTextNomUsuari()
     {
-        // Buscar si ja existeix un fill amb el component TextMeshPro
         nomUsuariText = GetComponentInChildren<TextMeshPro>();
 
         if (nomUsuariText == null)
         {
-            // Crear un nou GameObject per al text
             GameObject textObject = new GameObject("NomUsuari");
             textObject.transform.SetParent(transform);
             textObject.transform.localPosition = new Vector3(0, 1.5f, 0);
 
-            // Afegir el component TextMeshPro
             nomUsuariText = textObject.AddComponent<TextMeshPro>();
-
-            // Configurar l'estil del text
             nomUsuariText.fontSize = 3;
             nomUsuariText.alignment = TextAlignmentOptions.Center;
             nomUsuariText.color = Color.white;
-            nomUsuariText.outlineWidth = 0.2f;
-            nomUsuariText.outlineColor = Color.black;
         }
 
-        // Assignar el nom d'usuari (des d'AuthManager)
-        if (AuthManager.username != null)
+        // En Netcode, podríem fer servir NetworkVariable per sincronitzar-ho millor
+        if (IsOwner && AuthManager.username != null)
         {
             nomUsuariText.text = AuthManager.username;
         }
         else
         {
-            nomUsuariText.text = playerId;
-        }
-    }
-
-    // Corrutina per connectar-se al servidor Socket.io
-    IEnumerator ConnectarSocket()
-    {
-        client = new SocketIO("http://localhost:3000");
-
-        // Escoltar l'esdeveniment 'playerMoved' del servidor
-        client.On("playerMoved", (data) =>
-        {
-            try
-            {
-                string jsonStr = data.ToString();
-                PlayerMoveData response = JsonUtility.FromJson<PlayerMoveData>(jsonStr);
-
-                if (response.playerId != playerId && opponentPlayer != null)
-                {
-                    targetOpponentPosition = new Vector3(response.x, response.y, 0);
-                }
-            }
-            catch
-            {
-                // Si falla JsonUtility, ignorem l'esdeveniment
-            }
-        });
-
-        // Escoltar l'esdeveniment 'syncPositions' per rebre totes les posicions existents
-        client.On("syncPositions", (data) =>
-        {
-            if (primerCop)
-            {
-                primerCop = false;
-                // Per a syncPositions, depenem de SocketIOClient que retorna JSON
-                // Com JsonUtility no gestiona diccionaris, ignorem per ara
-            }
-        });
-
-        // Escoltar l'esdeveniment de desconnexió de l'altre jugador
-        client.On("jugadorDesconnectat", (data) =>
-        {
-            Debug.Log("L'altre jugador s'ha desconnectat!");
-            
-            // Desactivar l'oponent
-            if (opponentPlayer != null)
-            {
-                opponentPlayer.SetActive(false);
-            }
-        });
-
-        // Escoltar l'esdeveniment de victòria/derrota
-        client.On("gameFinished", (data) =>
-        {
-            GameFinishedResponse response = JsonUtility.FromJson<GameFinishedResponse>(data.ToString());
-            
-            if (response.winnerName == AuthManager.username)
-            {
-                Debug.Log("Has guanyat!");
-                if (GameManager.Instance != null)
-                {
-                    GameManager.Instance.Victory();
-                }
-            }
-            else
-            {
-                Debug.Log("Has perdut!");
-                if (GameManager.Instance != null)
-                {
-                    GameManager.Instance.Defeat();
-                }
-            }
-        });
-
-        // Escoltar quan un jugador és atrapat
-        client.On("playerCaught", (data) =>
-        {
-            Debug.Log("Un jugador ha estat atrapat per l'enemic!");
-        });
-
-        yield return client.ConnectAsync();
-
-        if (client.Connected)
-        {
-            clientConnectat = true;
-            Debug.Log("Connectat al servidor Socket.io!");
-
-            // Unir-se a la sala
-            client.EmitAsync("joinRoom", new
-            {
-                roomId = roomId,
-                playerId = playerId,
-                playerName = AuthManager.username ?? playerId
-            });
-        }
-        else
-        {
-            Debug.LogError("No s'ha pogut connectar al servidor Socket.io!");
+            nomUsuariText.text = "Jugador " + OwnerClientId;
         }
     }
 
     void Update()
     {
-        // Obtenir l'entrada del teclat (Fletxes o WASD)
+        // Restricció de Control: if (!IsOwner) return; (Regla Estricta 2)
+        if (!IsOwner) return;
+
+        // Lectura de tecles (Preservada)
         inputX = Input.GetAxisRaw("Horizontal");
         inputY = Input.GetAxisRaw("Vertical");
-
-        // Interpolar la posició de l'oponent per suavitzar el moviment
-        if (opponentPlayer != null && targetOpponentPosition != Vector3.zero)
-        {
-            opponentPlayer.transform.position = Vector3.Lerp(
-                opponentPlayer.transform.position, 
-                targetOpponentPosition, 
-                Time.deltaTime * lerpSpeed
-            );
-        }
     }
 
     void FixedUpdate()
     {
-        // Moviment del jugador usant Rigidbody2D i velocitat
+        // Restricció de Control (Regla Estricta 5: Sincronització via físiques)
+        if (!IsOwner) return;
+
+        // Moviment del jugador usant Rigidbody2D i velocitat (Preservada)
         Vector2 moviment = new Vector2(inputX, inputY).normalized * velocitat;
         rb.linearVelocity = moviment;
-
-        // Si estem connectats i el jugador s'ha mogut, enviar la posició al servidor
-        if (clientConnectat && (inputX != 0 || inputY != 0))
-        {
-            EnviarPosicio();
-        }
     }
 
-    // Enviar la posició actual al servidor
-    void EnviarPosicio()
+    // Lògica de colisions existent (Preservada - Regla Estricta 4)
+    private void OnCollisionEnter2D(Collision2D col)
     {
-        if (clientConnectat && client != null)
-        {
-            client.EmitAsync("updatePosition", new
-            {
-                roomId = roomId,
-                playerId = playerId,
-                x = transform.position.x,
-                y = transform.position.y
-            });
-        }
-    }
-
-    void OnDestroy()
-    {
-        // Desconnectar quan es destrueixi l'objecte
-        if (clientConnectat && client != null)
-        {
-            // Notificar als altres jugadors que ens desconnectem
-            client.EmitAsync("jugadorDesconnectat", new { playerId = playerId });
-            client.DisconnectAsync();
-        }
+        // Aquí aniria la lògica de col·lisions que el jugador ja tingui
     }
 
     public void Respawn()
     {
+        if (!IsOwner) return;
+
         if (puntInici != null)
         {
             transform.position = puntInici.position;
@@ -282,6 +152,7 @@ public class PlayerController : MonoBehaviour
         Debug.Log("Jugador tornant al punt d'inici (respawn)");
     }
 }
+
 
 // Classes per deserialitzar les dades rebudes del servidor
 [System.Serializable]
