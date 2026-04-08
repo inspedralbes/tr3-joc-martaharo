@@ -1,167 +1,181 @@
 using Unity.Netcode;
 using UnityEngine;
 using TMPro;
-using System.Collections;
 using System.Collections.Generic;
-using Unity.Collections;
+using SocketIOClient;
 
 // =================================================================================
 // SCRIPT: PlayerController
 // UBICACIÓ: Assets/_Project/Scripts/Player/
-// DESCRIPCIÓ: Control de moviment simplificat per Unity Netcode (Sense dependències)
+// DESCRIPCIÓ: Control de moviment per a multijugador Socket.io + Netcode
 // =================================================================================
 
 public class PlayerController : NetworkBehaviour
 {
-    // Velocitat del moviment del jugador (Preservada)
-    public float velocitat = 5f;
-
-    // ID del jugador (S'omple amb el nom per defecte)
+    [Header("Identitat del Jugador")]
     public string playerId;
+    public int playerNumber;
 
-    // Sincronització del nom en xarxa
-    public NetworkVariable<FixedString32Bytes> playerNameSync = new NetworkVariable<FixedString32Bytes>(
-        readPerm: NetworkVariableReadPermission.Everyone, 
-        writePerm: NetworkVariableWritePermission.Owner
-    );
+    [Header("Moviment")]
+    public float speed = 5f;
 
-    // Punt d'inici per al respawn
-    public Transform puntInici;
+    [Header("Configuració Física")]
+    public bool gravityScaleZero = true;
+    public bool freezeRotationZ = true;
 
-    // Referència al component Rigidbody2D per al moviment (Preservada)
     private Rigidbody2D rb;
-
-    // Referència a l'Animator per controlar les animacions de moviment
-    private Animator animator;
-
-    // Variables per emmagatzemar l'entrada del jugador
+    private Animator anim;
     private float inputX;
     private float inputY;
 
-    // Text MeshPro per mostrar el nom d'usuari
-    private TextMeshPro nomUsuariText;
+    private SocketIO client;
+    private string roomId;
+    private float syncInterval = 0.05f;
+    private float lastSyncTime = 0f;
+
+    private void Awake()
+    {
+        // Cerca automàtica de components si no estan assignats
+        if (rb == null) rb = GetComponent<Rigidbody2D>();
+        if (anim == null) anim = GetComponent<Animator>();
+        
+        // Configuració Física Antigravetat
+        if (rb != null)
+        {
+            rb.gravityScale = 0f;
+            rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+        }
+    }
 
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
 
-        // Si sóc el propietari, configuro el nom per defecte
         if (IsOwner)
         {
-            playerNameSync.Value = "Jugador " + OwnerClientId;
+            playerId = "Jugador " + OwnerClientId;
+            playerNumber = (int)OwnerClientId;
             
-            Debug.Log("Sóc el propietari d'aquest objecte (" + OwnerClientId + "). Configurant càmera.");
-            
-            Camera mainCamera = Camera.main;
-            if (mainCamera != null)
-            {
-                mainCamera.transform.SetParent(transform);
-                mainCamera.transform.localPosition = new Vector3(0, 0, -10);
-                Debug.Log("Càmera configurada per seguir el propietari.");
-            }
+            ConfigurarCamera();
+            ConnectarSocket();
         }
-        
-        // Subscripció als canvis de nom per a la UI
-        playerNameSync.OnValueChanged += (oldValue, newValue) => {
-            UpdatePlayerNameUI(newValue.ToString());
-        };
 
-        // Inicialització visual i de la UI
-        CrearTextNomUsuari();
-        UpdatePlayerNameUI(playerNameSync.Value.ToString());
-
-        // Spawn: Configurar posició inicial a Vector3.zero en iniciar-se el joc
         transform.position = Vector3.zero;
     }
 
     void Start()
     {
-        // Obtenir el component Rigidbody2D d'aquest objecte (Preservada)
-        rb = GetComponent<Rigidbody2D>();
-        
-        // Obtenir el component Animator per a les animacions
-        animator = GetComponent<Animator>();
-        
-        // Configurar posició inicial a Vector3.zero en iniciar-se
-        if (IsServer && !IsOwner)
+        // Components ja buscats a l'Awake
+    }
+
+    void ConfigurarCamera()
+    {
+        if (!IsOwner) return;
+
+        Camera mainCamera = Camera.main;
+        if (mainCamera != null)
         {
-            transform.position = Vector3.zero;
+            mainCamera.transform.SetParent(transform);
+            mainCamera.transform.localPosition = new Vector3(0, 0, -10);
+
+            PlayerCameraFollow cameraFollow = mainCamera.GetComponent<PlayerCameraFollow>();
+            if (cameraFollow != null)
+            {
+                cameraFollow.Target = transform;
+            }
         }
     }
 
-    /// <summary>
-    /// Crear un objecte de text TMP a sobre del jugador amb el seu nom d'usuari.
-    /// </summary>
-    void CrearTextNomUsuari()
+    void ConnectarSocket()
     {
-        nomUsuariText = GetComponentInChildren<TextMeshPro>();
+        client = new SocketIO("http://localhost:3000");
 
-        if (nomUsuariText == null)
-        {
-            GameObject textObject = new GameObject("NomUsuari");
-            textObject.transform.SetParent(transform);
-            textObject.transform.localPosition = new Vector3(0, 1.5f, 0);
+        client.OnConnected += (sender, e) => {
+            Debug.Log("PlayerController connectat a Socket.io");
+        };
 
-            nomUsuariText = textObject.AddComponent<TextMeshPro>();
-            nomUsuariText.fontSize = 3;
-            nomUsuariText.alignment = TextAlignmentOptions.Center;
-            nomUsuariText.color = Color.white;
-        }
+        client.On("playerMoved", response => {
+            Debug.Log("Posició rebuda del servidor");
+        });
+
+        client.ConnectAsync();
     }
 
-    /// <summary>
-    /// Mètode per actualitzar la UI del nom i la variable playerId.
-    /// </summary>
-    void UpdatePlayerNameUI(string newName)
+    public void SetRoomId(string id)
     {
-        playerId = newName;
-        if (nomUsuariText != null)
-        {
-            nomUsuariText.text = newName;
-        }
+        roomId = id;
     }
 
     void Update()
     {
-        // Seguretat Multijugador: Només el propietari controla el seu personatge
         if (!IsOwner) return;
 
-        // Lectura de tecles (Preservada)
         inputX = Input.GetAxisRaw("Horizontal");
         inputY = Input.GetAxisRaw("Vertical");
 
-        // Moviment i Animació: Activar el paràmetre isMoving segons el moviment
-        bool isMoving = inputX != 0 || inputY != 0;
-        if (animator != null)
+        if (anim != null)
         {
-            animator.SetBool("isMoving", isMoving);
+            anim.SetFloat("VelocitatX", inputX);
+            anim.SetFloat("VelocitatY", inputY);
+
+            float magnitud = Mathf.Sqrt(inputX * inputX + inputY * inputY);
+            anim.SetFloat("Velocitat", magnitud);
+        }
+
+        if (client != null && client.Connected && Time.time - lastSyncTime >= syncInterval)
+        {
+            float x = transform.position.x;
+            float y = transform.position.y;
+            client.EmitAsync("updatePosition", new { roomId = roomId, x = x, y = y });
+            lastSyncTime = Time.time;
         }
     }
 
     void FixedUpdate()
     {
-        // Moviment: També protegit per IsOwner per a la física
         if (!IsOwner) return;
 
-        // Moviment del jugador usant Rigidbody2D i velocitat (Preservada)
-        Vector2 moviment = new Vector2(inputX, inputY).normalized * velocitat;
-        
-        // Assegurem l'ús de linearVelocity per a versions noves de Unity
-        rb.linearVelocity = moviment;
+        Vector2 moviment = new Vector2(inputX, inputY).normalized * speed;
+        if (rb != null)
+        {
+            rb.linearVelocity = moviment;
+        }
+    }
+
+    public void UpdateRemotePosition(Vector2 newPos)
+    {
+        StartCoroutine(LerpPosition(newPos));
+    }
+
+    System.Collections.IEnumerator LerpPosition(Vector2 targetPos)
+    {
+        float t = 0f;
+        Vector2 startPos = transform.position;
+        float duration = 0.1f;
+
+        while (t < 1f)
+        {
+            t += Time.deltaTime / duration;
+            transform.position = Vector3.Lerp(startPos, targetPos, t);
+            yield return null;
+        }
+
+        transform.position = targetPos;
     }
 
     public void Respawn()
     {
         if (!IsOwner) return;
+        transform.position = Vector3.zero;
+    }
 
-        if (puntInici != null)
+    public override void OnDestroy()
+    {
+        base.OnDestroy();
+        
+        if (client != null)
         {
-            transform.position = puntInici.position;
+            client.DisconnectAsync();
         }
-        else
-        {
-            transform.position = Vector3.zero;
-        }
-        Debug.Log("Jugador tornant al punt d'inici (respawn)");
     }
 }
