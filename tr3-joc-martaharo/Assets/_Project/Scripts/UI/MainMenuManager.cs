@@ -7,9 +7,11 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Networking;
+using UnityEngine.UIElements;
 using System.Collections;
 using System.Text;
 using TMPro;
+using SocketIOClient;
 
 public class MainMenuManager : MonoBehaviour
 {
@@ -28,6 +30,7 @@ public class MainMenuManager : MonoBehaviour
     [Header("Formulari Unir-se a Sala")]
     public TMP_InputField campCodiSala;
     public TextMeshProUGUI missatgeUnir;
+    public Label labelError;
 
     // Variables estátiques per passar dades entre escenes
     public static string roomId { get; private set; }
@@ -36,10 +39,51 @@ public class MainMenuManager : MonoBehaviour
     public static bool isSinglePlayer { get; private set; }
     public static string playerNumber { get; private set; }
 
+    // Socket.io client per escoltar errors
+    private SocketIO socketClient;
+
     void Start()
     {
         // Mostrar panell principal
         MostrarPanellPrincipal();
+        
+        // Iniciar Socket.io per escoltar errors d'unió
+        ConnectarSocketPerErrors();
+    }
+    
+    async void ConnectarSocketPerErrors()
+    {
+        socketClient = new SocketIO(urlServidor);
+        
+        // Escoltar errors d'unió a sala
+        socketClient.On("joinError", response => {
+            string errorMsg = response.GetValue<string>();
+            UnityMainThreadDispatcher.Instance.Enqueue(() => {
+                if (labelError != null)
+                {
+                    if (errorMsg.Contains("full"))
+                    {
+                        labelError.text = "SALA PLENA";
+                    }
+                    else if (errorMsg.Contains("not found") || errorMsg.Contains("no trobada"))
+                    {
+                        labelError.text = "SALA NO TROBADA";
+                    }
+                    else
+                    {
+                        labelError.text = "CODI INCORRECTE";
+                    }
+                }
+                else
+                {
+                    // Fallback a TMP
+                    missatgeUnir.text = errorMsg.Contains("full") ? "SALA PLENA" : "CODI INCORRECTE";
+                    missatgeUnir.color = Color.red;
+                }
+            });
+        });
+        
+        await socketClient.ConnectAsync();
     }
 
     public void MostrarPanellPrincipal()

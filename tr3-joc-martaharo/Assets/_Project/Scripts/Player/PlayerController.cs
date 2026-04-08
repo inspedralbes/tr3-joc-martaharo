@@ -1,84 +1,92 @@
+using Unity.Netcode;
+using UnityEngine;
+using TMPro;
+using System.Collections;
+using System.Collections.Generic;
+using Unity.Collections;
+
 // =================================================================================
 // SCRIPT: PlayerController
 // UBICACIÓ: Assets/_Project/Scripts/Player/
-// DESCRIPCIÓ: Control de moviment del jugador compatible amb Netcode for GameObjects
+// DESCRIPCIÓ: Control de moviment simplificat per Unity Netcode (Sense dependències)
 // =================================================================================
 
-using UnityEngine;
-using TMPro;
-using Unity.Netcode; // Requerit per Netcode for GameObjects
-using System.Collections;
-using System.Collections.Generic;
-
-public class PlayerController : NetworkBehaviour // Herència: NetworkBehaviour (Regla Estricta 1)
+public class PlayerController : NetworkBehaviour
 {
     // Velocitat del moviment del jugador (Preservada)
     public float velocitat = 5f;
 
-    // Punt d'inici per al respawn (Preservada)
+    // ID del jugador (S'omple amb el nom per defecte)
+    public string playerId;
+
+    // Sincronització del nom en xarxa
+    public NetworkVariable<FixedString32Bytes> playerNameSync = new NetworkVariable<FixedString32Bytes>(
+        readPerm: NetworkVariableReadPermission.Everyone, 
+        writePerm: NetworkVariableWritePermission.Owner
+    );
+
+    // Punt d'inici per al respawn
     public Transform puntInici;
 
     // Referència al component Rigidbody2D per al moviment (Preservada)
     private Rigidbody2D rb;
 
+    // Referència a l'Animator per controlar les animacions de moviment
+    private Animator animator;
+
     // Variables per emmagatzemar l'entrada del jugador
     private float inputX;
     private float inputY;
 
-    // --- Capes de Red Necessàries (Añadides) ---
-    
-    // Altres scripts com EnemyAI i PlayerController la necessiten llegir (segons instruccions anteriors)
-    public string roomId;
-
     // Text MeshPro per mostrar el nom d'usuari
     private TextMeshPro nomUsuariText;
 
-    // Càmera Individual: OnNetworkSpawn (Regla Estricta 3)
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
 
+        // Si sóc el propietari, configuro el nom per defecte
         if (IsOwner)
         {
-            Debug.Log("Sóc el propietari d'aquest objecte. Configurant càmera.");
+            playerNameSync.Value = "Jugador " + OwnerClientId;
             
-            // Buscar la Main Camera de la escena
+            Debug.Log("Sóc el propietari d'aquest objecte (" + OwnerClientId + "). Configurant càmera.");
+            
             Camera mainCamera = Camera.main;
             if (mainCamera != null)
             {
-                // Opció 1: Emparentar (com un dels mètodes proposats)
-                // mainCamera.transform.SetParent(transform);
-                // mainCamera.transform.localPosition = new Vector3(0, 0, -10);
-
-                // Opció 2: Configurar Cinemachine si existeix (més modern)
-                // Si hi ha una càmera virtual, hauria d'apuntar a aquest transform.
-                // Aquí seguim la instrucció d'emparentar o configurar.
-                
-                // Pel tutorial bàsic de Netcode, emparentem o busquem el component de follow.
-                // Si usem un script de follow extern, aquí podríem assignar-ne el target.
-                
-                // Mantenim el focus de la càmera en el propietari
-                Debug.Log("Propietari detectat, càmera vinculada.");
+                mainCamera.transform.SetParent(transform);
+                mainCamera.transform.localPosition = new Vector3(0, 0, -10);
+                Debug.Log("Càmera configurada per seguir el propietari.");
             }
         }
         
-        // Inicialització visual (nom, etc.)
-        CrearTextNomUsuari();
-    }
+        // Subscripció als canvis de nom per a la UI
+        playerNameSync.OnValueChanged += (oldValue, newValue) => {
+            UpdatePlayerNameUI(newValue.ToString());
+        };
 
-    void Awake()
-    {
-        // Obtenir el roomId des del LobbyManager (variable estàtica) - Requerit per altres scripts
-        roomId = LobbyManager.roomId;
-        if (string.IsNullOrEmpty(roomId)) roomId = MainMenuManager.roomId;
+        // Inicialització visual i de la UI
+        CrearTextNomUsuari();
+        UpdatePlayerNameUI(playerNameSync.Value.ToString());
+
+        // Spawn: Configurar posició inicial a Vector3.zero en iniciar-se el joc
+        transform.position = Vector3.zero;
     }
 
     void Start()
     {
         // Obtenir el component Rigidbody2D d'aquest objecte (Preservada)
         rb = GetComponent<Rigidbody2D>();
-
-        // Si és un bot o un altre objecte de xarxa que no controlem, no l'hem d'inicialitzar més d'aquí
+        
+        // Obtenir el component Animator per a les animacions
+        animator = GetComponent<Animator>();
+        
+        // Configurar posició inicial a Vector3.zero en iniciar-se
+        if (IsServer && !IsOwner)
+        {
+            transform.position = Vector3.zero;
+        }
     }
 
     /// <summary>
@@ -99,42 +107,47 @@ public class PlayerController : NetworkBehaviour // Herència: NetworkBehaviour 
             nomUsuariText.alignment = TextAlignmentOptions.Center;
             nomUsuariText.color = Color.white;
         }
+    }
 
-        // En Netcode, podríem fer servir NetworkVariable per sincronitzar-ho millor
-        if (IsOwner && AuthManager.username != null)
+    /// <summary>
+    /// Mètode per actualitzar la UI del nom i la variable playerId.
+    /// </summary>
+    void UpdatePlayerNameUI(string newName)
+    {
+        playerId = newName;
+        if (nomUsuariText != null)
         {
-            nomUsuariText.text = AuthManager.username;
-        }
-        else
-        {
-            nomUsuariText.text = "Jugador " + OwnerClientId;
+            nomUsuariText.text = newName;
         }
     }
 
     void Update()
     {
-        // Restricció de Control: if (!IsOwner) return; (Regla Estricta 2)
+        // Seguretat Multijugador: Només el propietari controla el seu personatge
         if (!IsOwner) return;
 
         // Lectura de tecles (Preservada)
         inputX = Input.GetAxisRaw("Horizontal");
         inputY = Input.GetAxisRaw("Vertical");
+
+        // Moviment i Animació: Activar el paràmetre isMoving segons el moviment
+        bool isMoving = inputX != 0 || inputY != 0;
+        if (animator != null)
+        {
+            animator.SetBool("isMoving", isMoving);
+        }
     }
 
     void FixedUpdate()
     {
-        // Restricció de Control (Regla Estricta 5: Sincronització via físiques)
+        // Moviment: També protegit per IsOwner per a la física
         if (!IsOwner) return;
 
         // Moviment del jugador usant Rigidbody2D i velocitat (Preservada)
         Vector2 moviment = new Vector2(inputX, inputY).normalized * velocitat;
+        
+        // Assegurem l'ús de linearVelocity per a versions noves de Unity
         rb.linearVelocity = moviment;
-    }
-
-    // Lògica de colisions existent (Preservada - Regla Estricta 4)
-    private void OnCollisionEnter2D(Collision2D col)
-    {
-        // Aquí aniria la lògica de col·lisions que el jugador ja tingui
     }
 
     public void Respawn()
@@ -151,29 +164,4 @@ public class PlayerController : NetworkBehaviour // Herència: NetworkBehaviour 
         }
         Debug.Log("Jugador tornant al punt d'inici (respawn)");
     }
-}
-
-
-// Classes per deserialitzar les dades rebudes del servidor
-[System.Serializable]
-public class PlayerMoveData
-{
-    public string playerId;
-    public float x;
-    public float y;
-}
-
-[System.Serializable]
-public class PlayerPosition
-{
-    public float x;
-    public float y;
-    public string name;
-}
-
-[System.Serializable]
-public class GameFinishedResponse
-{
-    public string winnerId;
-    public string winnerName;
 }

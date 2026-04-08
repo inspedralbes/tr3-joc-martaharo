@@ -3,9 +3,9 @@ using SocketIOClient;
 using System.Collections;
 using System.Collections.Generic;
 
-public class NetworkManager : MonoBehaviour
+public class SocketNetworkManager : MonoBehaviour
 {
-    public static NetworkManager Instance { get; private set; }
+    public static SocketNetworkManager Instance { get; private set; }
 
     private SocketIO client;
     private string serverUrl = "http://localhost:3000";

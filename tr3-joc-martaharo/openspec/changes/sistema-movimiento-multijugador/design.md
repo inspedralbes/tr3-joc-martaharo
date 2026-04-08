@@ -42,7 +42,7 @@ El projecte és un joc cooperatiu 2D Pixel Art on dos jugadors han d'escapar d'u
 
 **Decisió**: Enviar actualitzacions de posició a cada actualització de frame de física (FixedUpdate) en lloc d'intervals limitats.
 
-**Justificació**: Per a un moviment suau, necessitem actualitzacions freqüents. Amb només 2 jugadors, l'amplada de banda de xarxa no és un problema. La limitació introduiria lag visual.
+**Justificació**: Per a un moviment suau, necessitem actualitzacions freqÜents. Amb només 2 jugadors, l'amplada de banda de xarxa no és un problema. La limitació introduiria lag visual.
 
 **Alternativa Considerada**: Limitació a 10 actualitzacions/segon - Rebutjada per a la suavitat visual.
 
@@ -57,6 +57,47 @@ El projecte és un joc cooperatiu 2D Pixel Art on dos jugadors han d'escapar d'u
 **Decisió**: Enviar `{ x: number, y: number }` com a objecte JSON senzill.
 
 **Justificació**: Overhead mínim. Es pot estendre per incloure rotació més tard si cal.
+
+### 5. Seguretat Multijugador amb Unity Netcode
+
+**Decisió**: Utilitzar `IsOwner` per garantir que només el jugador propietari controla el seu personatge.
+
+**Justificació**: Unity Netcode for GameObjects requereix controls d'autoritat per evitar que jugadors remots moguin objectes que no els pertanyen.
+
+**Implementació**: 
+- `if (!IsOwner) return;` a `Update()` abans de qualsevol lògica de moviment
+- `if (!IsOwner) return;` a `FixedUpdate()` per a la física
+
+### 6. Càmera Individual per Jugador
+
+**Decisió**: Fer la Main Camera filla del transform del propietari.
+
+**Justificació**: Cada jugador necessita la seva pròpia càmera que el segueixi.
+
+**Implementació**: 
+- A `OnNetworkSpawn()`, si `IsOwner` és cert:
+  - Buscar `Camera.main`
+  - `transform.SetParent(transform)`
+  - Posició local `(0, 0, -10)`
+
+### 7. Animació de Moviment
+
+**Decisió**: Utilitzar paràmetre booleà `isMoving` a l'Animator.
+
+**Justificació**: Control senzill de l'estat d'animació segons el moviment del jugador.
+
+**Implementació**:
+- Crear variable `Animator animator`
+- Utilitzar `Input.GetAxisRaw` per a moviment horitzontal i vertical
+- `animator.SetBool("isMoving", isMoving)` on `isMoving = inputX != 0 || inputY != 0`
+
+### 8. Spawn Inicial
+
+**Decisió**: Configurar la posició inicial a `Vector3.zero`.
+
+**Justificació**: Tots els jugadors comencen al centre de l'escena.
+
+**Implementació**: A `Start()`, configurar `transform.position = Vector3.zero`
 
 ## Riscos / Trade-offs
 
