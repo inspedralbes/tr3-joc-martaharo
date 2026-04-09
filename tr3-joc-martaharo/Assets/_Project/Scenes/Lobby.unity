@@ -193,23 +193,14 @@ GameObject:
   m_Component:
   - component: {fileID: 1885023904}
   - component: {fileID: 1885023903}
-  - component: {fileID: 1885023902}
   - component: {fileID: 1885023905}
   m_Layer: 0
   m_Name: Main Camera
-  m_TagString: MainCamera
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!81 &1885023902
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1885023901}
-  m_Enabled: 1
 --- !u!20 &1885023903
 Camera:
   m_ObjectHideFlags: 0
@@ -379,6 +370,10 @@ PrefabInstance:
     - target: {fileID: 3483979846532746421, guid: 829b20449daf7cab3ac4dedbd9e78c93, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3896729592618374520, guid: 829b20449daf7cab3ac4dedbd9e78c93, type: 3}
+      propertyPath: ConnectionData.Port
+      value: 7778
       objectReference: {fileID: 0}
     - target: {fileID: 5043443858617273869, guid: 829b20449daf7cab3ac4dedbd9e78c93, type: 3}
       propertyPath: m_Name

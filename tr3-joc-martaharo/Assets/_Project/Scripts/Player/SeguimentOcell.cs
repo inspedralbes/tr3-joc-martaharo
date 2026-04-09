@@ -1,7 +1,6 @@
 using UnityEngine;
 
-public class PlayerCameraFollow : MonoBehaviour
-{
+public class SeguimentOcell : MonoBehaviour{
     public Transform playerTarget;
     public Transform Target { get { return playerTarget; } set { playerTarget = value; } }
     public float smoothSpeed = 0.125f;
@@ -9,15 +8,7 @@ public class PlayerCameraFollow : MonoBehaviour
 
     void LateUpdate()
     {
-        if (playerTarget == null)
-        {
-            GameObject player = GameObject.FindGameObjectWithTag("Player");
-            if (player != null)
-            {
-                playerTarget = player.transform;
-            }
-            return;
-        }
+        if (playerTarget == null) return;
 
         Vector3 desiredPosition = playerTarget.position + offset;
         Vector3 smoothedPosition = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed);

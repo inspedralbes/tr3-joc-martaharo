@@ -1,11 +1,13 @@
 using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
+using System.Reflection;
 
 // =================================================================================
 // SCRIPT: PlayerController
 // UBICACIÓ: Assets/_Project/Scripts/Player/
-// DESCRIPCIÓ: Control de moviment per a multijugador EXCLUSIU Netcode
+// DESCRIPCIÓ: Control de moviment per a multijugador EXCLUSIU Netcode.
+//             Gestiona autoritat, càmera, audio i animacions.
 // =================================================================================
 
 public class PlayerController : NetworkBehaviour
@@ -24,23 +26,23 @@ public class PlayerController : NetworkBehaviour
 
     private void Awake()
     {
-        // Cerca automàtica de components si no estan assignats
+        // 1. Cerca de components
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
 
-        // Correció per al NetworkAnimator amb Reflection (per evitar errors de compilació i saltar-se el bloqueig de l'Inspector)
+        // 2. Correció per al NetworkAnimator amb Reflection 
+        // (Evita el bloqueig del Inspector i errors de compilació)
         NetworkAnimator networkAnim = GetComponent<NetworkAnimator>();
         if (networkAnim != null)
         {
-            // NetworkAnimator.m_Animator és privat, ho forcem per Reflection
-            var field = typeof(NetworkAnimator).GetField("m_Animator", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var field = typeof(NetworkAnimator).GetField("m_Animator", BindingFlags.Instance | BindingFlags.NonPublic);
             if (field != null)
             {
                 field.SetValue(networkAnim, anim);
             }
         }
         
-        // Configuració Física Antigravetat per defecte
+        // 3. Configuració Física Antigravetat
         if (rb != null)
         {
             rb.gravityScale = 0f;
@@ -54,10 +56,10 @@ public class PlayerController : NetworkBehaviour
 
         if (IsOwner)
         {
-            playerId = "Jugador " + OwnerClientId;
+            playerId = "Jugador Local (" + OwnerClientId + ")";
             playerNumber = (int)OwnerClientId;
             
-            // Configuració de Físiques definitiva per al Propietari
+            // Propietari: Físiques dinàmiques
             if (rb != null)
             {
                 rb.simulated = true;
@@ -68,63 +70,119 @@ public class PlayerController : NetworkBehaviour
         }
         else
         {
-            // Substitució de isKinematic per Dynamic segons la teva petició
+            // Remot: Físiques desactivades (simulació) per evitar conflictes amb NetworkTransform
             if (rb != null)
             {
                 rb.bodyType = RigidbodyType2D.Dynamic;
-                rb.simulated = false; // Mantenim simulated = false per als remots per evitar conflictes
+                rb.simulated = false; 
             }
+            
+            // Desactivar components de càmera/audio que puguin venir en el prefab
+            DesactivarComponentsRemots();
         }
-        
-        // Eliminem transform.position = Vector3.zero per evitar salts visuals innecessaris o conflictes amb NetworkTransform
     }
 
     void ConfigurarCamera()
     {
-        if (!IsOwner) return;
+        // Iniciem la corrutina de configuració per permetre reintents si la càmera triga a carregar
+        StartCoroutine(ConfiguracioCameraCoroutine());
+    }
 
-        Camera mainCamera = Camera.main;
-        if (mainCamera != null)
+    private System.Collections.IEnumerator ConfiguracioCameraCoroutine()
+    {
+        // 1. Prevenció d'errors de Shutdown
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening) yield break;
+        if (!IsOwner) yield break;
+
+        int intents = 0;
+        int maxIntents = 3;
+        bool exit = false;
+
+        while (intents < maxIntents && !exit)
         {
-            mainCamera.transform.SetParent(transform);
-            mainCamera.transform.localPosition = new Vector3(0, 0, -10);
+            // 2. Búsqueda Directa per Nom
+            GameObject camObj = GameObject.Find("Main Camera");
 
-            PlayerCameraFollow cameraFollow = mainCamera.GetComponent<PlayerCameraFollow>();
-            if (cameraFollow != null)
+            if (camObj != null)
             {
-                cameraFollow.Target = transform;
+                // 3. Triple verificació (Tipus i String)
+                Component cameraScript = camObj.GetComponent("SeguimentOcell");
+
+                if (cameraScript != null)
+                {
+                    // Èxit: Configuració del target i audio
+                    ((SeguimentOcell)cameraScript).playerTarget = transform;
+                    
+                    AudioListener[] allListeners = Object.FindObjectsByType<AudioListener>(FindObjectsSortMode.None);
+                    foreach (var l in allListeners) l.enabled = false;
+
+                    AudioListener localListener = camObj.GetComponent<AudioListener>();
+                    if (localListener != null) localListener.enabled = true;
+
+                    Debug.Log($"[PlayerController] TRIPLE VERIFICACIÓ ÈXIT: Connectat a '{camObj.name}' al intent {intents + 1}.");
+                    exit = true;
+                }
+                else
+                {
+                    Debug.LogWarning($"[PlayerController] Intent {intents + 1}: Objecte '{camObj.name}' trobat però 'SeguimentOcell' encara no és visible.");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[PlayerController] Intent {intents + 1}: 'Main Camera' encara no existeix a l'escena Joc.");
+            }
+
+            if (!exit)
+            {
+                intents++;
+                yield return new WaitForSeconds(0.1f); // Esperem 0.1s abans del següent intent
             }
         }
+
+        if (!exit)
+        {
+            Debug.LogError("[PlayerController] ERROR FINAL: Després de 3 intents, l'objecte 'Main Camera' o el script 'SegumientOcell' segueixen invisibles.");
+        }
+    }
+
+    void DesactivarComponentsRemots()
+    {
+        // Ens assegurem que els ocells que no són nostres no tinguin càmeres ni listeners actius
+        Camera cam = GetComponentInChildren<Camera>();
+        if (cam != null) cam.enabled = false;
+
+        AudioListener listener = GetComponentInChildren<AudioListener>();
+        if (listener != null) listener.enabled = false;
     }
 
     void Update()
     {
         if (!IsOwner) return;
 
+        // Captura d'inputs
         inputX = Input.GetAxisRaw("Horizontal");
         inputY = Input.GetAxisRaw("Vertical");
 
+        // Actualització del Animator per al Blend Tree 2D
         if (anim != null)
         {
             anim.SetFloat("VelocitatX", inputX);
             anim.SetFloat("VelocitatY", inputY);
 
-            float magnitud = Mathf.Sqrt(inputX * inputX + inputY * inputY);
+            float magnitud = new Vector2(inputX, inputY).magnitude;
             anim.SetFloat("Velocitat", magnitud);
         }
     }
 
     void FixedUpdate()
     {
-        // Vital: Només el propietari mou el seu ocell físicament
         if (!IsOwner) return;
 
-        // Vector de moviment normalitzat
+        // Moviment físic (Unity 6 friendly)
         Vector2 moviment = new Vector2(inputX, inputY).normalized;
         
         if (rb != null)
         {
-            // Aplicar velocitat lineal amb velocitat (Estàndard de Unity 6)
             rb.linearVelocity = moviment * speed;
         }
     }

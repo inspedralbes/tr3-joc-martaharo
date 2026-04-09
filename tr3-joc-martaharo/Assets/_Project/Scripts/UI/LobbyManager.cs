@@ -182,23 +182,39 @@ public class LobbyManager : MonoBehaviour
     {
         if (NetworkManager.Singleton != null && !NetworkManager.Singleton.IsServer)
         {
-            // 1. Encendre el motor abans de marxar
-            NetworkManager.Singleton.StartHost();
+            // 1. Intentar arrancar el Host
+            bool success = NetworkManager.Singleton.StartHost();
             
-            // 2. Avisar als altres jugadors via Socket.io
+            // 2. Verificació de seguretat: El port 7777 podria estar ocupat
+            if (!success || !NetworkManager.Singleton.IsListening)
+            {
+                Debug.LogWarning("[LobbyManager] ATENCIÓ: No s'ha pogut obrir el port 7777 (potser ja està ocupat). Aturant inici de partida.");
+                return;
+            }
+
+            // 3. Avisar als altres jugadors via Socket.io
             client.EmitAsync("startGame", new { roomId = roomId });
             
-            // 3. Canviar d'escena amb el NetworkSceneManager (MOLT IMPORTANT)
-            // Això assegura que els jugadors que es connectin arribin directament a l'escena de joc
+            // 4. Canviar d'escena amb el NetworkSceneManager
+            // Només arribem aquí si la xarxa ha arrancat bé (IsListening == true)
             NetworkManager.Singleton.SceneManager.LoadScene("Joc", UnityEngine.SceneManagement.LoadSceneMode.Single);
+        }
+    }
+
+    private void OnApplicationQuit()
+    {
+        // Alliberem el port 7777 en tancar el joc/editor per evitar 'Address already in use'
+        if (NetworkManager.Singleton != null)
+        {
+            NetworkManager.Singleton.Shutdown();
+            Debug.Log("[LobbyManager] NetworkManager tancat correctament per alliberar ports.");
         }
     }
 
     void OnDestroy()
     {
-        // NO cridem a NetworkManager.Singleton.Shutdown() aquí!
-        // Això matava la xarxa enmig del canvi d'escena i provocava el NullReferenceException.
-        
+        // Aquí NO fem Shutdown() per no trencar canvis d'escena, 
+        // però sí ens desconnectem del servidor Socket.io
         if (client != null) client.DisconnectAsync();
     }
     
