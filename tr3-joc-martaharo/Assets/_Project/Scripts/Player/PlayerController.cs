@@ -1,4 +1,5 @@
 using Unity.Netcode;
+using Unity.Netcode.Components;
 using UnityEngine;
 
 // =================================================================================
@@ -26,6 +27,18 @@ public class PlayerController : NetworkBehaviour
         // Cerca automàtica de components si no estan assignats
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
+
+        // Correció per al NetworkAnimator amb Reflection (per evitar errors de compilació i saltar-se el bloqueig de l'Inspector)
+        NetworkAnimator networkAnim = GetComponent<NetworkAnimator>();
+        if (networkAnim != null)
+        {
+            // NetworkAnimator.m_Animator és privat, ho forcem per Reflection
+            var field = typeof(NetworkAnimator).GetField("m_Animator", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            if (field != null)
+            {
+                field.SetValue(networkAnim, anim);
+            }
+        }
         
         // Configuració Física Antigravetat per defecte
         if (rb != null)

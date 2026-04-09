@@ -196,10 +196,9 @@ public class LobbyManager : MonoBehaviour
 
     void OnDestroy()
     {
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
-        {
-            NetworkManager.Singleton.Shutdown();
-        }
+        // NO cridem a NetworkManager.Singleton.Shutdown() aquí!
+        // Això matava la xarxa enmig del canvi d'escena i provocava el NullReferenceException.
+        
         if (client != null) client.DisconnectAsync();
     }
     
