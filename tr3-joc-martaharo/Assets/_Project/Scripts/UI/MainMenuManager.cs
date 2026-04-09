@@ -259,7 +259,20 @@ public class MainMenuManager : MonoBehaviour
             if (www.result == UnityWebRequest.Result.Success)
             {
                 string resposta = www.downloadHandler.text;
-                RoomListResponse sales = JsonUtility.FromJson<RoomListResponse>(resposta);
+                Debug.Log("Respuesta del servidor (Llista sales): " + resposta);
+
+                RoomListResponse sales = null;
+                try 
+                {
+                    sales = JsonUtility.FromJson<RoomListResponse>(resposta);
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogError("Error al parsejar JSON de sales: " + e.Message);
+                    missatgeUnir.text = "Error de format al servidor.";
+                    missatgeUnir.color = Color.red;
+                    yield break;
+                }
 
                 // Buscar la sala pel codi
                 RoomItem salaTrobada = null;
