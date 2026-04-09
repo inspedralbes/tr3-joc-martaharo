@@ -27,6 +27,17 @@ public class LobbyManager : MonoBehaviour
     
     // PUBLIC para que EnemyAI y PlayerController lo lean (Error CS0122 solucionado)
     public static string roomId;
+
+    void Start()
+    {
+        // El problema del 'ja existeix': Limpiar sesisones previas si el NetworkManager persiste
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            Debug.Log("LobbyManager: Netejant sessió de xarxa anterior...");
+            NetworkManager.Singleton.Shutdown();
+        }
+    }
+
     void OnEnable()
     {
         // 1. Inicializar UI Toolkit con los nombres de tu UI Builder
@@ -101,8 +112,6 @@ public class LobbyManager : MonoBehaviour
 
         // Sincronització de Noms: escoltar updateLobby
         client.On("updateLobby", response => {
-            Debug.Log("Sincronizando lista de jugadores...");
-            
             // Obtenir array de noms directament (sense JsonUtility)
             string[] jugadors = response.GetValue<string[]>();
             
@@ -126,21 +135,25 @@ public class LobbyManager : MonoBehaviour
                     }
                 }
             }
-            
-            // Crear string per al Label
-            string textLlista = "JUGADORS: ";
+
+            // Debug.Log mostrant quants jugadors hi ha connectats
+            Debug.Log("Jugadors connectats: " + todosJugadores.Count);
+
+            // Crear string per al Label amb cada nom en una línia nova
+            string textLlista = "";
             foreach (string nom in todosJugadores)
             {
-                textLlista += nom + ", ";
+                textLlista += nom + "\n";
             }
-            // Treure l'últim ", "
-            if (todosJugadores.Count > 0)
+            // Treure l'últim "\n"
+            if (!string.IsNullOrEmpty(textLlista))
             {
-                textLlista = textLlista.Substring(0, textLlista.Length - 2);
+                textLlista = textLlista.TrimEnd('\n');
             }
             
             // Actualitzar la UI (Thread principal)
             UnityMainThreadDispatcher.Instance.Enqueue(() => {
+                llistaJugadors.text = "";
                 llistaJugadors.text = textLlista;
             });
         });
@@ -155,7 +168,10 @@ public class LobbyManager : MonoBehaviour
         // Escuchar señal de inicio (Punto 3.3 de tu plan)
         client.On("startGame", response => {
             UnityMainThreadDispatcher.Instance.Enqueue(() => {
-                SceneManager.LoadScene("Joc");
+                if (NetworkManager.Singleton != null && !NetworkManager.Singleton.IsHost)
+                {
+                    NetworkManager.Singleton.StartClient();
+                }
             });
         });
 
@@ -164,27 +180,26 @@ public class LobbyManager : MonoBehaviour
 
     void IniciarPartida()
     {
-        if (client != null && client.Connected)
+        if (NetworkManager.Singleton != null && !NetworkManager.Singleton.IsServer)
         {
-            // Iniciar el Host
+            // 1. Encendre el motor abans de marxar
             NetworkManager.Singleton.StartHost();
             
-            // Enviar event perquè la resta de jugadors s'uneixin com a clients
+            // 2. Avisar als altres jugadors via Socket.io
             client.EmitAsync("startGame", new { roomId = roomId });
             
-            // Carregar l'escena de joc
-            NetworkManager.Singleton.SceneManager.LoadScene("Joc", LoadSceneMode.Single);
-        }
-        else
-        {
-            // Fallback: Si el servidor está apagado, entrar al juego para testear movimiento
-            Debug.LogWarning("Servidor offline. Entrando en modo local.");
-            SceneManager.LoadScene("Joc");
+            // 3. Canviar d'escena amb el NetworkSceneManager (MOLT IMPORTANT)
+            // Això assegura que els jugadors que es connectin arribin directament a l'escena de joc
+            NetworkManager.Singleton.SceneManager.LoadScene("Joc", UnityEngine.SceneManagement.LoadSceneMode.Single);
         }
     }
 
     void OnDestroy()
     {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+        {
+            NetworkManager.Singleton.Shutdown();
+        }
         if (client != null) client.DisconnectAsync();
     }
     

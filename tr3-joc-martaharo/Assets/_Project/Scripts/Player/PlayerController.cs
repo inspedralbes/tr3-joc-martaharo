@@ -1,13 +1,10 @@
 using Unity.Netcode;
 using UnityEngine;
-using TMPro;
-using System.Collections.Generic;
-using SocketIOClient;
 
 // =================================================================================
 // SCRIPT: PlayerController
 // UBICACIÓ: Assets/_Project/Scripts/Player/
-// DESCRIPCIÓ: Control de moviment per a multijugador Socket.io + Netcode
+// DESCRIPCIÓ: Control de moviment per a multijugador EXCLUSIU Netcode
 // =================================================================================
 
 public class PlayerController : NetworkBehaviour
@@ -19,27 +16,18 @@ public class PlayerController : NetworkBehaviour
     [Header("Moviment")]
     public float speed = 5f;
 
-    [Header("Configuració Física")]
-    public bool gravityScaleZero = true;
-    public bool freezeRotationZ = true;
-
     private Rigidbody2D rb;
     private Animator anim;
     private float inputX;
     private float inputY;
 
-    private SocketIO client;
-    private string roomId;
-    private float syncInterval = 0.05f;
-    private float lastSyncTime = 0f;
-
     private void Awake()
     {
         // Cerca automàtica de components si no estan assignats
-        if (rb == null) rb = GetComponent<Rigidbody2D>();
-        if (anim == null) anim = GetComponent<Animator>();
+        rb = GetComponent<Rigidbody2D>();
+        anim = GetComponent<Animator>();
         
-        // Configuració Física Antigravetat
+        // Configuració Física Antigravetat per defecte
         if (rb != null)
         {
             rb.gravityScale = 0f;
@@ -56,16 +44,26 @@ public class PlayerController : NetworkBehaviour
             playerId = "Jugador " + OwnerClientId;
             playerNumber = (int)OwnerClientId;
             
+            // Configuració de Físiques definitiva per al Propietari
+            if (rb != null)
+            {
+                rb.simulated = true;
+                rb.bodyType = RigidbodyType2D.Dynamic;
+            }
+
             ConfigurarCamera();
-            ConnectarSocket();
         }
-
-        transform.position = Vector3.zero;
-    }
-
-    void Start()
-    {
-        // Components ja buscats a l'Awake
+        else
+        {
+            // Substitució de isKinematic per Dynamic segons la teva petició
+            if (rb != null)
+            {
+                rb.bodyType = RigidbodyType2D.Dynamic;
+                rb.simulated = false; // Mantenim simulated = false per als remots per evitar conflictes
+            }
+        }
+        
+        // Eliminem transform.position = Vector3.zero per evitar salts visuals innecessaris o conflictes amb NetworkTransform
     }
 
     void ConfigurarCamera()
@@ -86,26 +84,6 @@ public class PlayerController : NetworkBehaviour
         }
     }
 
-    void ConnectarSocket()
-    {
-        client = new SocketIO("http://localhost:3000");
-
-        client.OnConnected += (sender, e) => {
-            Debug.Log("PlayerController connectat a Socket.io");
-        };
-
-        client.On("playerMoved", response => {
-            Debug.Log("Posició rebuda del servidor");
-        });
-
-        client.ConnectAsync();
-    }
-
-    public void SetRoomId(string id)
-    {
-        roomId = id;
-    }
-
     void Update()
     {
         if (!IsOwner) return;
@@ -121,61 +99,26 @@ public class PlayerController : NetworkBehaviour
             float magnitud = Mathf.Sqrt(inputX * inputX + inputY * inputY);
             anim.SetFloat("Velocitat", magnitud);
         }
-
-        if (client != null && client.Connected && Time.time - lastSyncTime >= syncInterval)
-        {
-            float x = transform.position.x;
-            float y = transform.position.y;
-            client.EmitAsync("updatePosition", new { roomId = roomId, x = x, y = y });
-            lastSyncTime = Time.time;
-        }
     }
 
     void FixedUpdate()
     {
+        // Vital: Només el propietari mou el seu ocell físicament
         if (!IsOwner) return;
 
-        Vector2 moviment = new Vector2(inputX, inputY).normalized * speed;
+        // Vector de moviment normalitzat
+        Vector2 moviment = new Vector2(inputX, inputY).normalized;
+        
         if (rb != null)
         {
-            rb.linearVelocity = moviment;
+            // Aplicar velocitat lineal amb velocitat (Estàndard de Unity 6)
+            rb.linearVelocity = moviment * speed;
         }
-    }
-
-    public void UpdateRemotePosition(Vector2 newPos)
-    {
-        StartCoroutine(LerpPosition(newPos));
-    }
-
-    System.Collections.IEnumerator LerpPosition(Vector2 targetPos)
-    {
-        float t = 0f;
-        Vector2 startPos = transform.position;
-        float duration = 0.1f;
-
-        while (t < 1f)
-        {
-            t += Time.deltaTime / duration;
-            transform.position = Vector3.Lerp(startPos, targetPos, t);
-            yield return null;
-        }
-
-        transform.position = targetPos;
     }
 
     public void Respawn()
     {
         if (!IsOwner) return;
         transform.position = Vector3.zero;
-    }
-
-    public override void OnDestroy()
-    {
-        base.OnDestroy();
-        
-        if (client != null)
-        {
-            client.DisconnectAsync();
-        }
     }
 }
