@@ -4,7 +4,7 @@ using UnityEngine;
 public class EnemyAI : NetworkBehaviour
 {
     [Header("Configuración de movimiento")]
-    public float speed = 2.5f;
+    public float speed = 3.5f;
     public float chaseRadius = 10f;
 
     private Rigidbody2D rb;
@@ -20,7 +20,15 @@ public class EnemyAI : NetworkBehaviour
         {
             rb.gravityScale = 0f;
             rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+            rb.linearDamping = 0f;
+            rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         }
+    }
+
+    private void Start()
+    {
+        if (anim == null)
+            anim = GetComponent<Animator>();
     }
 
     private void FixedUpdate()
@@ -31,20 +39,16 @@ public class EnemyAI : NetworkBehaviour
         {
             Vector2 direction = (targetPlayer.position - transform.position).normalized;
             rb.linearVelocity = direction * speed;
-
-            if (anim != null)
-            {
-                anim.SetBool("isWalking", true);
-            }
         }
         else
         {
             if (rb != null) rb.linearVelocity = Vector2.zero;
+        }
 
-            if (anim != null)
-            {
-                anim.SetBool("isWalking", false);
-            }
+        bool isMoving = rb != null && rb.linearVelocity.magnitude > 0.1f;
+        if (anim != null)
+        {
+            anim.SetBool("isWalking", isMoving);
         }
     }
 
@@ -82,10 +86,20 @@ public class EnemyAI : NetworkBehaviour
     private void OnCollisionEnter2D(Collision2D collision)
     {
         if (!IsServer) return;
+        ProcesarColision(collision.gameObject);
+    }
 
-        if (collision.gameObject.CompareTag("Player"))
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+        if (!IsServer) return;
+        ProcesarColision(collision.gameObject);
+    }
+
+    private void ProcesarColision(GameObject objeto)
+    {
+        if (objeto.CompareTag("Player"))
         {
-            PlayerController pc = collision.gameObject.GetComponent<PlayerController>();
+            PlayerController pc = objeto.GetComponent<PlayerController>();
             if (pc != null)
             {
                 pc.RecibirDanyo();

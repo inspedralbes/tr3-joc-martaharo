@@ -160,7 +160,7 @@ public class PlayerController : NetworkBehaviour
     {
         esInvulnerable = true;
         if (sr != null) sr.color = Color.red;
-        yield return new WaitForSeconds(1.2f);
+        yield return new WaitForSeconds(1f);
         if (sr != null) sr.color = Color.white;
         esInvulnerable = false;
     }
