@@ -20,6 +20,10 @@ public class PlayerController : NetworkBehaviour
     [Header("Moviment")]
     public float speed = 5f;
 
+    [Header("Sistema de Vida")]
+    public int vida = 2;
+    private bool esInvulnerable = false;
+
     private Rigidbody2D rb;
     private Animator anim;
     private SpriteRenderer sr;
@@ -135,10 +139,42 @@ public class PlayerController : NetworkBehaviour
         if (rb != null) rb.linearVelocity = moviment * speed;
     }
 
+    // --- SISTEMA DE VIDA ---
+    public void RecibirDanyo()
+    {
+        if (esInvulnerable) return;
+
+        vida--;
+
+        if (vida <= 0)
+        {
+            Respawn();
+            vida = 2;
+            return;
+        }
+
+        StartCoroutine(InvulnerabilidadTemporal());
+    }
+
+    private System.Collections.IEnumerator InvulnerabilidadTemporal()
+    {
+        esInvulnerable = true;
+        if (sr != null) sr.color = Color.red;
+        yield return new WaitForSeconds(1.2f);
+        if (sr != null) sr.color = Color.white;
+        esInvulnerable = false;
+    }
+
     // --- REAPARICIÓ (RESPAWN) ---
     public void Respawn() 
     {
-        // Funció buida per evitar errors de compilació de la IA
+        GameObject spawnPoint = GameObject.FindWithTag("Respawn");
+        if (spawnPoint != null)
+            transform.position = spawnPoint.transform.position;
+        else
+            transform.position = Vector2.zero;
+
+        if (rb != null) rb.linearVelocity = Vector2.zero;
     }
 
     public override void OnDestroy()

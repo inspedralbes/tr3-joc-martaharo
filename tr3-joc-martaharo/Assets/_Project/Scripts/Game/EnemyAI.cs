@@ -1,100 +1,57 @@
+using Unity.Netcode;
 using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
-using SocketIOClient;
 
-public class EnemyAI : MonoBehaviour
+public class EnemyAI : NetworkBehaviour
 {
-    [Header("Configuració de moviment")]
-    public float speed = 3f;
+    [Header("Configuración de movimiento")]
+    public float speed = 2.5f;
     public float chaseRadius = 10f;
-    public bool seguirJugadorMesProper = true;
-
-    [Header("Punt d'inici (Respawn)")]
-    public Transform puntInici;
 
     private Rigidbody2D rb;
     private Transform targetPlayer;
-    private string roomId;
-    private SocketIO client;
-    private bool isMultiplayer;
-    private bool isHost = false;
-    private GameManager gameManager;
-    private Vector2 serverPosition;
-    private bool positionFromServer = false;
+    private Animator anim;
 
-    void Start()
+    private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        roomId = LobbyManager.roomId;
-        if (string.IsNullOrEmpty(roomId))
-            roomId = MainMenuManager.roomId;
+        anim = GetComponent<Animator>();
 
-        isMultiplayer = !MainMenuManager.isSinglePlayer;
-        gameManager = Object.FindFirstObjectByType<GameManager>();
-
-        // Buscar automàticament el puntInici si no està assignat
-        if (puntInici == null)
+        if (rb != null)
         {
-            GameObject puntIniciObj = GameObject.Find("PuntInici");
-            if (puntIniciObj != null)
-            {
-                puntInici = puntIniciObj.transform;
-            }
+            rb.gravityScale = 0f;
+            rb.constraints = RigidbodyConstraints2D.FreezeRotation;
         }
-
-        StartCoroutine(ConnectSocket());
     }
 
-    IEnumerator ConnectSocket()
+    private void FixedUpdate()
     {
-        client = new SocketIO("http://localhost:3000");
+        if (!IsServer) return;
 
-        // Rebre posició de l'enemic des del servidor (multijugador)
-        client.On("enemyMovedFromServer", (data) =>
+        if (targetPlayer != null)
         {
-            var posData = JsonUtility.FromJson<EnemyServerPosition>(data.ToString());
-            serverPosition = new Vector2(posData.x, posData.y);
-            positionFromServer = true;
-        });
+            Vector2 direction = (targetPlayer.position - transform.position).normalized;
+            rb.linearVelocity = direction * speed;
 
-        // Rebre ordre de fer respawn des del servidor
-        client.On("doRespawn", (data) =>
-        {
-            var respawnData = JsonUtility.FromJson<RespawnData>(data.ToString());
-            FerRespawn();
-        });
-
-        yield return client.ConnectAsync();
-
-        if (client.Connected)
-        {
-            // Unir-se a la sala com a observador de l'enemic
-            client.EmitAsync("registerEnemy", new
+            if (anim != null)
             {
-                roomId = roomId
-            });
+                anim.SetBool("isWalking", true);
+            }
+        }
+        else
+        {
+            if (rb != null) rb.linearVelocity = Vector2.zero;
 
-            // En multiplayer, el primer jugador és l'"host" que calcula l'IA
-            if (isMultiplayer)
+            if (anim != null)
             {
-                isHost = true;
+                anim.SetBool("isWalking", false);
             }
         }
     }
 
-    void Update()
+    private void Update()
     {
-        // En mode individual: IA local
-        // En mode multijugador: només l'host calcula la IA
-        if (!isMultiplayer || (isMultiplayer && isHost))
-        {
-            CalcularIAPersonal();
-        }
-    }
+        if (!IsServer) return;
 
-    void CalcularIAPersonal()
-    {
         GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
         Transform nearestPlayer = null;
         float nearestDistance = float.MaxValue;
@@ -122,113 +79,17 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
-    void FixedUpdate()
+    private void OnCollisionEnter2D(Collision2D collision)
     {
-        // En multijugador: rebre posició del servidor
-        if (isMultiplayer && !isHost && positionFromServer)
-        {
-            transform.position = Vector2.Lerp(transform.position, serverPosition, Time.fixedDeltaTime * 5f);
-            return;
-        }
+        if (!IsServer) return;
 
-        // L'host mou l'enemic localment
-        if (targetPlayer != null)
-        {
-            Vector2 direction = (targetPlayer.position - transform.position).normalized;
-            rb.linearVelocity = direction * speed;
-
-            // Enviar posició al servidor per sincronitzar
-            if (client != null && client.Connected && isHost)
-            {
-                client.EmitAsync("enemyMoved", new
-                {
-                    roomId = roomId,
-                    x = transform.position.x,
-                    y = transform.position.y
-                });
-            }
-        }
-    }
-
-    void OnCollisionEnter2D(Collision2D collision)
-    {
         if (collision.gameObject.CompareTag("Player"))
         {
-            PlayerController player = collision.gameObject.GetComponent<PlayerController>();
-            if (player != null)
-            {
-                if (isMultiplayer)
-                {
-                    // Notificar al servidor que hem atrapat un jugador
-                    if (client != null && client.Connected)
-                    {
-                        client.EmitAsync("playerCaught", new
-                        {
-                            roomId = roomId,
-                            playerId = player.playerId
-                        });
-                    }
-
-                    // Fer respawn del jugador atrapat
-                    StartCoroutine(RespawnPlayer(collision.gameObject));
-                }
-                else
-                {
-                    if (gameManager != null)
-                    {
-                        gameManager.GameOver();
-                    }
-                }
-            }
-        }
-    }
-
-    IEnumerator RespawnPlayer(GameObject player)
-    {
-        player.SetActive(false);
-        yield return new WaitForSeconds(1f);
-
-        PlayerController playerController = player.GetComponent<PlayerController>();
-        if (playerController != null)
-        {
-            playerController.Respawn();
-        }
-        else if (puntInici != null)
-        {
-            player.transform.position = puntInici.position;
-        }
-        else
-        {
-            player.transform.position = Vector3.zero;
-        }
-
-        player.SetActive(true);
-        Debug.Log("Jugador tornant al punt d'inici (respawn)");
-    }
-
-    public void FerRespawn()
-    {
-        GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
-        foreach (GameObject player in players)
-        {
-            PlayerController pc = player.GetComponent<PlayerController>();
+            PlayerController pc = collision.gameObject.GetComponent<PlayerController>();
             if (pc != null)
             {
-                pc.Respawn();
+                pc.RecibirDanyo();
             }
         }
-    }
-
-    [System.Serializable]
-    public class EnemyServerPosition
-    {
-        public float x;
-        public float y;
-    }
-
-    [System.Serializable]
-    public class RespawnData
-    {
-        public string playerId;
     }
 }
