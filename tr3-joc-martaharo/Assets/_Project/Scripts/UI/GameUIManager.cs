@@ -116,6 +116,10 @@ public class GameUIManager : MonoBehaviour
 
     public void AnarMenuPrincipal()
     {
+        if (Unity.Netcode.NetworkManager.Singleton != null)
+        {
+            Unity.Netcode.NetworkManager.Singleton.Shutdown();
+        }
         SceneManager.LoadScene("Menu");
     }
 

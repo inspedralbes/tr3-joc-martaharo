@@ -14,4 +14,12 @@ public class SeguimentOcell : MonoBehaviour{
         Vector3 smoothedPosition = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed);
         transform.position = smoothedPosition;
     }
+
+
+// ESTA ES LA FUNCIÓN QUE TE FALTA Y POR LA QUE DA ERROR:
+    public void SetTarget(Transform newTarget)
+    {
+        playerTarget = newTarget;
+        Debug.Log("[Càmera] Nou objectiu assignat: " + newTarget.name);
+    }
 }

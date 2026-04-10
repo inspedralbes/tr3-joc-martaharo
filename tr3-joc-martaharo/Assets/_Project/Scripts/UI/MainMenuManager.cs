@@ -38,6 +38,9 @@ public class MainMenuManager : MonoBehaviour
     public static string nomSala { get; private set; }
     public static bool isSinglePlayer { get; private set; }
     public static string playerNumber { get; private set; }
+    
+    // NOU: Flag per saber si som el Host (el que crea la sala)
+    public static bool isHost;
 
     // Socket.io client per escoltar errors
     private SocketIO socketClient;
@@ -134,7 +137,6 @@ public class MainMenuManager : MonoBehaviour
     }
 
     // Botó: Crear Sala Multiplayer
-    // Mostra els dos panells (Crear i Unir-se) simultàniament
     public void CrearSalaMultiplayer()
     {
         panellPrincipal.SetActive(false);
@@ -175,14 +177,17 @@ public class MainMenuManager : MonoBehaviour
                 roomId = dades.roomId;
                 roomCode = dades.roomCode;
                 isSinglePlayer = false;
+                
+                // MARQUEM COM A HOST
+                isHost = true;
 
                 textCodiSala.text = "Codi: " + roomCode;
                 missatgeCrear.text = "Sala creada! Comparteix el codi amb el teu company.";
                 missatgeCrear.color = Color.green;
 
-                Debug.Log("Sala multiplayer creada: " + roomCode);
+                Debug.Log("Sala multiplayer creada (Només Backend): " + roomCode);
 
-                yield return new WaitForSeconds(2f);
+                yield return new WaitForSeconds(1f);
                 SceneManager.LoadScene("Lobby");
             }
             else
@@ -202,16 +207,6 @@ public class MainMenuManager : MonoBehaviour
             missatgeCrear.text = "Codi copiat!";
             missatgeCrear.color = Color.yellow;
             Debug.Log("Codi copiat al portapapers: " + roomCode);
-        }
-    }
-
-    IEnumerator RestaurarMissatgeCrear()
-    {
-        yield return new WaitForSeconds(1f);
-        if (!string.IsNullOrEmpty(roomCode))
-        {
-            missatgeCrear.text = "Sala creada! Comparteix el codi amb el teu company.";
-            missatgeCrear.color = Color.green;
         }
     }
 
@@ -258,27 +253,15 @@ public class MainMenuManager : MonoBehaviour
 
             if (www.result == UnityWebRequest.Result.Success)
             {
-                string resposta = www.downloadHandler.text;
-                Debug.Log("Respuesta del servidor (Llista sales): " + resposta);
+                string respostaRaw = www.downloadHandler.text;
+                string jsonFix = "{\"sales\":" + respostaRaw + "}";
+                
+                LlistaSalesWrapper salesWrapper = JsonUtility.FromJson<LlistaSalesWrapper>(jsonFix);
 
-                RoomListResponse sales = null;
-                try 
+                SalaInfo salaTrobada = null;
+                if (salesWrapper != null && salesWrapper.sales != null)
                 {
-                    sales = JsonUtility.FromJson<RoomListResponse>(resposta);
-                }
-                catch (System.Exception e)
-                {
-                    Debug.LogError("Error al parsejar JSON de sales: " + e.Message);
-                    missatgeUnir.text = "Error de format al servidor.";
-                    missatgeUnir.color = Color.red;
-                    yield break;
-                }
-
-                // Buscar la sala pel codi
-                RoomItem salaTrobada = null;
-                if (sales != null && sales.rooms != null)
-                {
-                    foreach (RoomItem room in sales.rooms)
+                    foreach (SalaInfo room in salesWrapper.sales)
                     {
                         if (room.codi_sala == codi)
                         {
@@ -290,7 +273,7 @@ public class MainMenuManager : MonoBehaviour
 
                 if (salaTrobada != null)
                 {
-                    yield return UnirSalaPerId(salaTrobada.id, salaTrobada.nom_sala);
+                    yield return UnirSalaPerId(salaTrobada.id, salaTrobada.codi_sala);
                 }
                 else
                 {
@@ -306,7 +289,7 @@ public class MainMenuManager : MonoBehaviour
         }
     }
 
-    IEnumerator UnirSalaPerId(string idSala, string nom)
+    IEnumerator UnirSalaPerId(string idSala, string codi)
     {
         using (UnityWebRequest www = new UnityWebRequest(urlServidor + "/api/rooms/" + idSala + "/join", "POST"))
         {
@@ -318,11 +301,13 @@ public class MainMenuManager : MonoBehaviour
             if (www.result == UnityWebRequest.Result.Success)
             {
                 roomId = idSala;
-                roomCode = nom;
-                nomSala = nom;
+                roomCode = codi;
                 isSinglePlayer = false;
+                
+                // MARQUEM COM A CLIENT
+                isHost = false;
 
-                Debug.Log("Unit a la sala: " + idSala);
+                Debug.Log("Unit a la sala (Només Backend): " + idSala);
                 missatgeUnir.text = "Unit a la sala! Començant...";
                 missatgeUnir.color = Color.green;
 
@@ -339,17 +324,9 @@ public class MainMenuManager : MonoBehaviour
         }
     }
 
-    // Botó: Tornar
     public void Tornar()
     {
         MostrarPanellPrincipal();
-    }
-
-    // Classes per a les peticions
-    [System.Serializable]
-    public class RoomRequest
-    {
-        public string nom_sala;
     }
 
     // Classes per deserialitzar respostes
@@ -375,18 +352,17 @@ public class MainMenuManager : MonoBehaviour
     }
 
     [System.Serializable]
-    public class RoomListResponse
+    public class LlistaSalesWrapper
     {
-        public RoomItem[] rooms;
+        public SalaInfo[] sales;
     }
 
     [System.Serializable]
-    public class RoomItem
+    public class SalaInfo
     {
         public string id;
         public string nom_sala;
         public string codi_sala;
-        public int jugadors_actuals;
     }
 
     [System.Serializable]

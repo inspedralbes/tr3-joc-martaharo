@@ -1,7 +1,7 @@
 <ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
     <ui:VisualElement style="flex-grow: 1; justify-content: space-around; background-color: rgb(5, 10, 16);">
         <ui:Label text="CODI DE LA SALA: -----" name="label-codi" style="font-size: 20px; -unity-text-align: upper-center; -unity-font-style: bold; color: rgb(0, 255, 255);" />
-        <ui:Label text="ESPERANT &#10;JUGADORS..." name="llista-jugadors" parse-escape-sequences="false" focusable="false" style="font-size: 30px; -unity-font-style: normal; color: rgb(224, 247, 250); -unity-text-outline-width: 1px; text-shadow: 0 0 80px rgba(0, 0, 0, 0); letter-spacing: 2px;" />
+        <ui:Label text="ESPERANT&#10;JUGADORS..." name="llista-jugadors" parse-escape-sequences="false" focusable="false" style="font-size: 30px; -unity-font-style: normal; color: rgb(224, 247, 250); -unity-text-outline-width: 1px; text-shadow: 0 0 80px rgba(0, 0, 0, 0); letter-spacing: 2px;" />
         <ui:Button text="COMENÇAR PARTIDA" name="btn-comencar" style="background-color: rgba(10, 26, 47, 0.78); border-left-color: rgb(0, 255, 255); border-right-color: rgb(0, 255, 255); border-top-color: rgb(0, 255, 255); border-bottom-color: rgb(0, 255, 255); border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-top-left-radius: 20px; border-top-right-radius: 20px; border-bottom-right-radius: 20px; border-bottom-left-radius: 20px; color: rgb(0, 255, 255); font-size: 45px; -unity-text-outline-width: 1px; -unity-font-style: bold;" />
     </ui:VisualElement>
 </ui:UXML>

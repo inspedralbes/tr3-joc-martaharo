@@ -3,224 +3,159 @@ using UnityEngine.UIElements;
 using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Collections.Generic;
-using SocketIOClient;
-using TMPro;
 using Unity.Netcode;
+using Unity.Collections;
 
-public class LobbyManager : MonoBehaviour
+public class LobbyManager : NetworkBehaviour
 {
-    // URL del servidor definida en tu stack tecnológico
-    private string urlServidor = "http://localhost:3000";
+    // VARIABLES ESTÀTIQUES
+    public static string roomId;
+    public static string localPlayerName;
 
-    [Header("UI Elements")]
+    [Header("UI References")]
     private Label labelCodi;
-    private Label llistaJugadors;
-    private Label labelErrorMenu;
+    private Label labelJugadors;
     private Button btnComencar;
 
-    // Referencias de red
-    private SocketIO client;
-    private string playerName;
+    // SINCRONITZACIÓ NETCODE
+    private NetworkVariable<FixedString32Bytes> codiSalaSincronitzat = new NetworkVariable<FixedString32Bytes>(
+        "", NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     
-    // Variable estàtica per passar el nom al PlayerController
-    public static string localPlayerName;
-    
-    // PUBLIC para que EnemyAI y PlayerController lo lean (Error CS0122 solucionado)
-    public static string roomId;
+    private NetworkList<FixedString32Bytes> nombresConectados;
 
-    void Start()
+    private void Awake()
     {
-        // El problema del 'ja existeix': Limpiar sesisones previas si el NetworkManager persiste
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
-        {
-            Debug.Log("LobbyManager: Netejant sessió de xarxa anterior...");
-            NetworkManager.Singleton.Shutdown();
-        }
+        nombresConectados = new NetworkList<FixedString32Bytes>();
     }
 
-    void OnEnable()
+    private void Start()
     {
-        // 1. Inicializar UI Toolkit con los nombres de tu UI Builder
+        // 1. Vincular UI immediatament
         var root = GetComponent<UIDocument>().rootVisualElement;
         labelCodi = root.Q<Label>("label-codi");
-        llistaJugadors = root.Q<Label>("llista-jugadors");
-        labelErrorMenu = root.Q<Label>("label-error-menu");
+        labelJugadors = root.Q<Label>("llista-jugadors");
         btnComencar = root.Q<Button>("btn-comencar");
 
-        // 2. Cargar datos desde MainMenuManager
+        if (btnComencar != null)
+        {
+            btnComencar.style.display = DisplayStyle.Flex;
+            btnComencar.clicked -= IniciarPartidaUI;
+            btnComencar.clicked += IniciarPartidaUI;
+        }
+
+        // 2. Restaurar dades locals
         roomId = MainMenuManager.roomId;
-        labelCodi.text = "CODI: " + MainMenuManager.roomCode;
-        
-        // 3. Obtener el nombre del usuario logueado (según tu AuthManager)
-        playerName = AuthManager.username;
-        
-        // Passar el nom al PlayerController via variable estàtica
-        localPlayerName = playerName;
+        localPlayerName = AuthManager.username;
 
-        // 4. Configurar botón - sempre actiu
-        btnComencar.SetEnabled(true);
-        btnComencar.clicked += IniciarPartida;
-
-        // Efectos Visuales (Hover)
-        btnComencar.RegisterCallback<MouseEnterEvent>(evt => {
-            btnComencar.style.backgroundColor = new Color(0f, 0.8f, 1f, 1f); // Cian brillante
-            btnComencar.transform.scale = new Vector3(1.1f, 1.1f, 1f);
-        });
-
-        btnComencar.RegisterCallback<MouseLeaveEvent>(evt => {
-            btnComencar.style.backgroundColor = new Color(0f, 0.4f, 0.6f, 1f); // Azul estándar
-            btnComencar.transform.scale = new Vector3(1f, 1f, 1f);
-        });
-
-        // 5. Iniciar conexión sincronizada
-        ConnectarAlServidor();
-    }
-
-    async void ConnectarAlServidor()
-    {
-        client = new SocketIO(urlServidor);
-
-        // Al conectar, unirse a la sala creada en el servidor Node.js
-        client.OnConnected += (sender, e) => {
-            client.EmitAsync("joinRoom", new { 
-                roomId = roomId, 
-                playerName = playerName 
-            });
-        };
-
-        // Error de Codi Incorrecte: Rebre errors d'unió a la sala
-        client.On("joinError", response => {
-            string errorMsg = response.GetValue<string>();
-            UnityMainThreadDispatcher.Instance.Enqueue(() => {
-                if (labelErrorMenu != null)
-                {
-                    labelErrorMenu.text = "CODI INCORRECTE";
-                }
-                if (labelCodi != null)
-                {
-                    if (errorMsg.Contains("full"))
-                    {
-                        labelCodi.text = "SALA PLENA";
-                    }
-                    else
-                    {
-                        labelCodi.text = "CODI INCORRECTE";
-                    }
-                }
-            });
-        });
-
-        // Sincronització de Noms: escoltar updateLobby
-        client.On("updateLobby", response => {
-            // Obtenir array de noms directament (sense JsonUtility)
-            string[] jugadors = response.GetValue<string[]>();
-            
-            // Crear llista incloent el jugador local
-            List<string> todosJugadores = new List<string>();
-            
-            // Sempre incloure el propi usuari
-            if (!string.IsNullOrEmpty(playerName))
-            {
-                todosJugadores.Add(playerName);
-            }
-            
-            // Afegir la resta de jugadors del servidor usant foreach
-            if (jugadors != null)
-            {
-                foreach (string nom in jugadors)
-                {
-                    if (!string.IsNullOrEmpty(nom) && !todosJugadores.Contains(nom))
-                    {
-                        todosJugadores.Add(nom);
-                    }
-                }
-            }
-
-            // Debug.Log mostrant quants jugadors hi ha connectats
-            Debug.Log("Jugadors connectats: " + todosJugadores.Count);
-
-            // Crear string per al Label amb cada nom en una línia nova
-            string textLlista = "";
-            foreach (string nom in todosJugadores)
-            {
-                textLlista += nom + "\n";
-            }
-            // Treure l'últim "\n"
-            if (!string.IsNullOrEmpty(textLlista))
-            {
-                textLlista = textLlista.TrimEnd('\n');
-            }
-            
-            // Actualitzar la UI (Thread principal)
-            UnityMainThreadDispatcher.Instance.Enqueue(() => {
-                llistaJugadors.text = "";
-                llistaJugadors.text = textLlista;
-            });
-        });
-
-        // Millora Visual: Si la sala està plena
-        client.On("roomFull", response => {
-            UnityMainThreadDispatcher.Instance.Enqueue(() => {
-                labelCodi.text = "SALA PLENA";
-            });
-        });
-
-        // Escuchar señal de inicio (Punto 3.3 de tu plan)
-        client.On("startGame", response => {
-            UnityMainThreadDispatcher.Instance.Enqueue(() => {
-                if (NetworkManager.Singleton != null && !NetworkManager.Singleton.IsHost)
-                {
-                    NetworkManager.Singleton.StartClient();
-                }
-            });
-        });
-
-        await client.ConnectAsync();
-    }
-
-    void IniciarPartida()
-    {
-        if (NetworkManager.Singleton != null && !NetworkManager.Singleton.IsServer)
+        // 3. ENGEGAR XARXA (Lògica de Lobby-Centric)
+        if (NetworkManager.Singleton != null && !NetworkManager.Singleton.IsListening)
         {
-            // 1. Intentar arrancar el Host
-            bool success = NetworkManager.Singleton.StartHost();
-            
-            // 2. Verificació de seguretat: El port 7777 podria estar ocupat
-            if (!success || !NetworkManager.Singleton.IsListening)
+            Debug.Log("[LobbyManager] Engegant xarxa des del Lobby...");
+            if (MainMenuManager.isHost)
             {
-                Debug.LogWarning("[LobbyManager] ATENCIÓ: No s'ha pogut obrir el port 7777 (potser ja està ocupat). Aturant inici de partida.");
-                return;
+                Debug.Log("[LobbyManager] Iniciant com a HOST.");
+                NetworkManager.Singleton.StartHost();
             }
+            else
+            {
+                Debug.Log("[LobbyManager] Iniciant com a CLIENT.");
+                NetworkManager.Singleton.StartClient();
+            }
+        }
 
-            // 3. Avisar als altres jugadors via Socket.io
-            client.EmitAsync("startGame", new { roomId = roomId });
-            
-            // 4. Canviar d'escena amb el NetworkSceneManager
-            // Només arribem aquí si la xarxa ha arrancat bé (IsListening == true)
-            NetworkManager.Singleton.SceneManager.LoadScene("Joc", UnityEngine.SceneManagement.LoadSceneMode.Single);
+        ActualizarInterfaz();
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        Debug.Log("[LobbyManager] OnNetworkSpawn: Xarxa spawnejada.");
+
+        // Subscripcions
+        nombresConectados.OnListChanged += OnLlistaNomsChanged;
+        codiSalaSincronitzat.OnValueChanged += OnCodiChanged;
+
+        if (IsServer)
+        {
+            codiSalaSincronitzat.Value = MainMenuManager.roomCode;
+            AfegirNomALlista(AuthManager.username);
+        }
+        else
+        {
+            AfegirNomALlistaServerRpc(AuthManager.username);
+        }
+
+        ActualizarInterfaz();
+        StartCoroutine(RefrescForcatCoroutine());
+    }
+
+    private IEnumerator RefrescForcatCoroutine()
+    {
+        yield return new WaitForSeconds(0.1f);
+        ActualizarInterfaz();
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        if (nombresConectados != null) nombresConectados.OnListChanged -= OnLlistaNomsChanged;
+        if (codiSalaSincronitzat != null) codiSalaSincronitzat.OnValueChanged -= OnCodiChanged;
+    }
+
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    private void AfegirNomALlistaServerRpc(string nom) { AfegirNomALlista(nom); }
+
+    private void AfegirNomALlista(string nom)
+    {
+        FixedString32Bytes fixedNom = nom;
+        if (!nombresConectados.Contains(fixedNom)) nombresConectados.Add(fixedNom);
+    }
+
+    private void OnLlistaNomsChanged(NetworkListEvent<FixedString32Bytes> changeEvent) { ActualizarInterfaz(); }
+    private void OnCodiChanged(FixedString32Bytes vell, FixedString32Bytes nou) { ActualizarInterfaz(); }
+
+    public void ActualizarInterfaz()
+    {
+        if (labelCodi != null)
+        {
+            string codi = (IsSpawned) ? codiSalaSincronitzat.Value.ToString() : "";
+            if (string.IsNullOrEmpty(codi)) codi = MainMenuManager.roomCode;
+            labelCodi.text = "CODI: " + codi;
+        }
+
+        if (labelJugadors != null)
+        {
+            List<string> noms = new List<string>();
+            if (IsSpawned)
+            {
+                foreach (var n in nombresConectados) noms.Add(n.ToString());
+            }
+            if (noms.Count == 0 && !string.IsNullOrEmpty(localPlayerName)) noms.Add(localPlayerName);
+            labelJugadors.text = string.Join("\n", noms);
+        }
+
+        if (btnComencar != null) btnComencar.style.display = DisplayStyle.Flex;
+    }
+
+    private void IniciarPartidaUI()
+    {
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+        {
+            Debug.LogError($"[LobbyManager] Error: Xarxa no escoltant. IsClient:{IsClient}, IsServer:{IsServer}");
+            return;
+        }
+
+        // SEMPRE fem la petició al servidor per carregar l'escena de forma sincronitzada
+        SolicitarInicioPartidaServerRpc();
+    }
+
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    private void SolicitarInicioPartidaServerRpc(RpcParams rpcParams = default)
+    {
+        Debug.Log("[LobbyManager] Petición de inicio recibida del jugador: " + rpcParams.Receive.SenderClientId);
+        if (IsServer)
+        {
+            NetworkManager.SceneManager.LoadScene("Joc", LoadSceneMode.Single);
         }
     }
 
-    private void OnApplicationQuit()
-    {
-        // Alliberem el port 7777 en tancar el joc/editor per evitar 'Address already in use'
-        if (NetworkManager.Singleton != null)
-        {
-            NetworkManager.Singleton.Shutdown();
-            Debug.Log("[LobbyManager] NetworkManager tancat correctament per alliberar ports.");
-        }
-    }
-
-    void OnDestroy()
-    {
-        // Aquí NO fem Shutdown() per no trencar canvis d'escena, 
-        // però sí ens desconnectem del servidor Socket.io
-        if (client != null) client.DisconnectAsync();
-    }
-    
-    [System.Serializable]
-    public class LobbyUpdate
-    {
-        public List<string> players;
-    }
+    public override void OnDestroy() { base.OnDestroy(); }
 }

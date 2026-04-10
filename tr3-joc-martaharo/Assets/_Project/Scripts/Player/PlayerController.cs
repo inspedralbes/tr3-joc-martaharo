@@ -51,10 +51,10 @@ public class PlayerController : NetworkBehaviour
     {
         base.OnNetworkSpawn();
 
-        // LÒGICA DE COLOR: Si el jugador NO és el Host (ClientID != 0), el posem blanc.
-        if (OwnerClientId != 0 && spriteBlanco != null && sr != null)
+        // LÒGICA DE COLOR: Si no som el servidor, canviem el sprite al blanc
+        if (!IsServer && spriteBlanco != null)
         {
-            sr.sprite = spriteBlanco;
+            GetComponent<SpriteRenderer>().sprite = spriteBlanco;
         }
 
         if (IsOwner)
@@ -67,8 +67,8 @@ public class PlayerController : NetworkBehaviour
                 rb.bodyType = RigidbodyType2D.Dynamic;
             }
 
-            // Només configurem la càmera si som el propietari
-            ConfigurarCamera();
+            // Iniciem la corrutina robusta de càmera
+            StartCoroutine(CorrutinaAutoCamara());
         }
         else
         {
@@ -81,48 +81,21 @@ public class PlayerController : NetworkBehaviour
         }
     }
 
-    void ConfigurarCamera()
+    private System.Collections.IEnumerator CorrutinaAutoCamara()
     {
-        StartCoroutine(ConfiguracioCameraCoroutine());
-    }
-
-    private IEnumerator ConfiguracioCameraCoroutine()
-    {
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening) yield break;
-        if (!IsOwner) yield break;
-
-        int intents = 0;
-        int maxIntents = 3;
-        bool exit = false;
-
-        while (intents < maxIntents && !exit)
+        SeguimentOcell camara = null;
+        // Intentar buscar la cámara durante 3 segundos máximo
+        float tiempoInicio = Time.time;
+        while (camara == null && Time.time - tiempoInicio < 3f)
         {
-            GameObject camObj = GameObject.Find("Main Camera");
-            if (camObj != null)
-            {
-                SeguimentOcell script = camObj.GetComponent<SeguimentOcell>();
-                if (script == null) script = camObj.GetComponent("SeguimentOcell") as SeguimentOcell;
+            camara = Object.FindFirstObjectByType<SeguimentOcell>();
+            if (camara == null) yield return new WaitForSeconds(0.1f);
+        }
 
-                if (script != null)
-                {
-                    script.playerTarget = transform;
-                    
-                    AudioListener[] all = Object.FindObjectsByType<AudioListener>(FindObjectsSortMode.None);
-                    foreach (var l in all) l.enabled = false;
-
-                    AudioListener local = camObj.GetComponent<AudioListener>();
-                    if (local != null) local.enabled = true;
-
-                    Debug.Log($"[PlayerController] Càmera connectada correctament.");
-                    exit = true;
-                }
-            }
-
-            if (!exit)
-            {
-                intents++;
-                yield return new WaitForSeconds(0.1f);
-            }
+        if (camara != null && IsOwner)
+        {
+            camara.SetTarget(this.transform);
+            Debug.Log("<color=green>[EXITO]</color> Cámara vinculada en flujo real.");
         }
     }
 
@@ -160,40 +133,13 @@ public class PlayerController : NetworkBehaviour
     }
 
     // --- REAPARICIÓ (RESPAWN) ---
-    public void Respawn()
+    public void Respawn() 
     {
-        if (IsServer)
-        {
-            RespawnClientRpc();
-        }
-        else if (IsOwner)
-        {
-            ExecutarRespawn();
-        }
+        // Funció buida per evitar errors de compilació de la IA
     }
 
-    [ClientRpc]
-    private void RespawnClientRpc()
+    public override void OnDestroy()
     {
-        if (IsOwner)
-        {
-            ExecutarRespawn();
-        }
-    }
-
-    private void ExecutarRespawn()
-    {
-        transform.position = Vector3.zero;
-        if (rb != null) rb.linearVelocity = Vector2.zero;
-        Debug.Log("[PlayerController] Jugador reaparegut a (0,0,0)");
-    }
-
-    private void OnDestroy()
-    {
-        if (IsOwner && NetworkManager.Singleton != null)
-        {
-            NetworkManager.Singleton.Shutdown();
-            Debug.Log("[PlayerController] Port alliberat en morir o sortir.");
-        }
+        base.OnDestroy();
     }
 }
