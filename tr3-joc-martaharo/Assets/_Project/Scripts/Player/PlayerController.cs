@@ -21,9 +21,7 @@ public class PlayerController : NetworkBehaviour
     public float speed = 5f;
 
     [Header("Sistema de Vida")]
-    public int vida = 2;
-    private bool esInvulnerable = false;
-
+public NetworkVariable<int> vidaSincronizada = new NetworkVariable<int>(2, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);   private bool esInvulnerable = false;
     private Rigidbody2D rb;
     private Animator anim;
     private SpriteRenderer sr;
@@ -139,21 +137,38 @@ public class PlayerController : NetworkBehaviour
         if (rb != null) rb.linearVelocity = moviment * speed;
     }
 
-    // --- SISTEMA DE VIDA ---
-    public void RecibirDanyo()
+ // --- SISTEMA DE VIDA (Sincronizado) ---
+   public void RecibirDanyo()
+{
+    if (!IsServer) return; 
+    if (esInvulnerable) return;
+
+    vidaSincronizada.Value--; 
+
+    MostrarEfectoDanyoClientRpc(); // Esto hace que TODOS vean el color rojo
+
+    if (vidaSincronizada.Value <= 0)
     {
-        if (esInvulnerable) return;
+        Respawn();
+        vidaSincronizada.Value = 2;
+    }
+}
+    [ClientRpc]
+    private void MostrarEfectoDanyoClientRpc()
+    {
+        // Este código se ejecuta en las pantallas de todos los jugadores
+        StartCoroutine(EfectoVisualDanyo());
+    }
 
-        vida--;
-
-        if (vida <= 0)
-        {
-            Respawn();
-            vida = 2;
-            return;
-        }
-
-        StartCoroutine(InvulnerabilidadTemporal());
+    private IEnumerator EfectoVisualDanyo()
+    {
+        esInvulnerable = true;
+        if (sr != null) sr.color = Color.red;
+        
+        yield return new WaitForSeconds(1f);
+        
+        if (sr != null) sr.color = Color.white;
+        esInvulnerable = false;
     }
 
     private System.Collections.IEnumerator InvulnerabilidadTemporal()
@@ -165,16 +180,26 @@ public class PlayerController : NetworkBehaviour
         esInvulnerable = false;
     }
 
-    // --- REAPARICIÓ (RESPAWN) ---
+   // --- REAPARICIÓ (RESPAWN) ---
     public void Respawn() 
     {
-        GameObject spawnPoint = GameObject.FindWithTag("Respawn");
-        if (spawnPoint != null)
-            transform.position = spawnPoint.transform.position;
-        else
-            transform.position = Vector2.zero;
+        // Solo el servidor tiene permiso para mover objetos físicamente
+        // y que ese movimiento se replique a todos.
+        if (!IsServer) return; 
 
-        if (rb != null) rb.linearVelocity = Vector2.zero;
+        GameObject spawnPoint = GameObject.FindWithTag("Respawn");
+        Vector3 posicionDestino = (spawnPoint != null) ? spawnPoint.transform.position : Vector3.zero;
+
+        // Al cambiar la posición en el Servidor, el NetworkTransform 
+        // se encarga de avisar a los demás automáticamente.
+        transform.position = posicionDestino;
+
+        if (rb != null) 
+        {
+            rb.linearVelocity = Vector2.zero;
+        }
+        
+        Debug.Log($"[SERVER] Jugador {OwnerClientId} reaparecido en {posicionDestino}");
     }
 
     public override void OnDestroy()

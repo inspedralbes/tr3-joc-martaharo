@@ -95,13 +95,15 @@ public class EnemyAI : NetworkBehaviour
         ProcesarColision(collision.gameObject);
     }
 
-    private void ProcesarColision(GameObject objeto)
+   private void ProcesarColision(GameObject objeto)
     {
         if (objeto.CompareTag("Player"))
         {
             PlayerController pc = objeto.GetComponent<PlayerController>();
             if (pc != null)
             {
+                // Este log te confirmará en la consola de Unity si el servidor detecta el choque
+                Debug.Log($"[SERVER] Impacto detectado con: {objeto.name}");
                 pc.RecibirDanyo();
             }
         }
