@@ -67,8 +67,7 @@ public class PlayerController : NetworkBehaviour
                 rb.bodyType = RigidbodyType2D.Dynamic;
             }
 
-            // Iniciem la corrutina robusta de càmera
-            StartCoroutine(CorrutinaAutoCamara());
+            StartCoroutine(CorrutinaCamaraBuildFix());
         }
         else
         {
@@ -81,22 +80,26 @@ public class PlayerController : NetworkBehaviour
         }
     }
 
-    private System.Collections.IEnumerator CorrutinaAutoCamara()
+    private System.Collections.IEnumerator CorrutinaCamaraBuildFix()
     {
-        SeguimentOcell camara = null;
-        // Intentar buscar la cámara durante 3 segundos máximo
-        float tiempoInicio = Time.time;
-        while (camara == null && Time.time - tiempoInicio < 3f)
+        if (!IsOwner) yield break;
+
+        SeguimentOcell scriptCamara = null;
+
+        while (scriptCamara == null)
         {
-            camara = Object.FindFirstObjectByType<SeguimentOcell>();
-            if (camara == null) yield return new WaitForSeconds(0.1f);
+            scriptCamara = Object.FindFirstObjectByType<SeguimentOcell>();
+
+            if (scriptCamara == null && Camera.main != null)
+            {
+                scriptCamara = Camera.main.GetComponent<SeguimentOcell>();
+            }
+
+            if (scriptCamara == null) yield return new WaitForSeconds(0.1f);
         }
 
-        if (camara != null && IsOwner)
-        {
-            camara.SetTarget(this.transform);
-            Debug.Log("<color=green>[EXITO]</color> Cámara vinculada en flujo real.");
-        }
+        scriptCamara.SetTarget(this.transform);
+        Debug.Log("<color=cyan>[SISTEMA]</color> Cámara vinculada con éxito en el Build local.");
     }
 
     void DesactivarComponentsRemots()
