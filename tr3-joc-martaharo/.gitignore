@@ -1,0 +1,18 @@
+# Variables d'entorn
+.env
+
+# Node_modules
+node_modules/
+
+# Logs
+logs/
+*.log
+
+# Sistema operatiu
+.DS_Store
+Thumbs.db
+
+# Unity
+Library/
+Temp/
+obj/
