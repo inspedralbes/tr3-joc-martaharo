@@ -21,11 +21,11 @@ public class LobbyManager : NetworkBehaviour
     private NetworkVariable<FixedString32Bytes> codiSalaSincronitzat = new NetworkVariable<FixedString32Bytes>(
         "", NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     
-    private NetworkList<FixedString32Bytes> nombresConectados;
+    public NetworkList<FixedString32Bytes> listaNombres;
 
     private void Awake()
     {
-        nombresConectados = new NetworkList<FixedString32Bytes>();
+        listaNombres = new NetworkList<FixedString32Bytes>();
     }
 
     private void Start()
@@ -70,22 +70,33 @@ public class LobbyManager : NetworkBehaviour
     {
         Debug.Log("[LobbyManager] OnNetworkSpawn: Xarxa spawnejada.");
 
-        // Subscripcions
-        nombresConectados.OnListChanged += OnLlistaNomsChanged;
+        // Subscripcions als canvis de dades de xarxa
+        listaNombres.OnListChanged += OnLlistaNomsChanged;
         codiSalaSincronitzat.OnValueChanged += OnCodiChanged;
 
         if (IsServer)
         {
             codiSalaSincronitzat.Value = MainMenuManager.roomCode;
+            // El servidor afegeix el seu propi nom
             AfegirNomALlista(AuthManager.username);
+            // BUG FIX: Escoltar quan nous clients es connecten per afegir-los a la llista
+            NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
         }
         else
         {
+            // El client envia el seu nom al servidor
             AfegirNomALlistaServerRpc(AuthManager.username);
         }
 
         ActualizarInterfaz();
         StartCoroutine(RefrescForcatCoroutine());
+    }
+
+    // Cridat al servidor quan un nou client es connecta al lobby
+    private void OnClientConnected(ulong clientId)
+    {
+        Debug.Log($"[LobbyManager] Client connectat al lobby: {clientId}. Esperant que enviï el seu nom...");
+        // El client enviarà el seu nom via AfegirNomALlistaServerRpc des del seu OnNetworkSpawn
     }
 
     private IEnumerator RefrescForcatCoroutine()
@@ -96,8 +107,11 @@ public class LobbyManager : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
-        if (nombresConectados != null) nombresConectados.OnListChanged -= OnLlistaNomsChanged;
+        // Neteja de subscripcions per evitar fuites de memòria i NullReferenceException
+        if (listaNombres != null) listaNombres.OnListChanged -= OnLlistaNomsChanged;
         if (codiSalaSincronitzat != null) codiSalaSincronitzat.OnValueChanged -= OnCodiChanged;
+        if (NetworkManager.Singleton != null)
+            NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
     }
 
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
@@ -106,7 +120,7 @@ public class LobbyManager : NetworkBehaviour
     private void AfegirNomALlista(string nom)
     {
         FixedString32Bytes fixedNom = nom;
-        if (!nombresConectados.Contains(fixedNom)) nombresConectados.Add(fixedNom);
+        if (!listaNombres.Contains(fixedNom)) listaNombres.Add(fixedNom);
     }
 
     private void OnLlistaNomsChanged(NetworkListEvent<FixedString32Bytes> changeEvent) { ActualizarInterfaz(); }
@@ -126,7 +140,7 @@ public class LobbyManager : NetworkBehaviour
             List<string> noms = new List<string>();
             if (IsSpawned)
             {
-                foreach (var n in nombresConectados) noms.Add(n.ToString());
+                foreach (var n in listaNombres) noms.Add(n.ToString());
             }
             if (noms.Count == 0 && !string.IsNullOrEmpty(localPlayerName)) noms.Add(localPlayerName);
             labelJugadors.text = string.Join("\n", noms);
@@ -137,6 +151,13 @@ public class LobbyManager : NetworkBehaviour
 
     private void IniciarPartidaUI()
     {
+        // Guard: evitar enviar RPCs si l'objecte de xarxa no existeix encara
+        if (!IsSpawned)
+        {
+            Debug.LogWarning("[LobbyManager] IniciarPartidaUI: l'objecte no està spawnejat a la xarxa encara.");
+            return;
+        }
+
         if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
         {
             Debug.LogError($"[LobbyManager] Error: Xarxa no escoltant. IsClient:{IsClient}, IsServer:{IsServer}");

@@ -1,7 +1,16 @@
 using UnityEngine;
-using UnityEngine.UI;
+using UnityEngine.UI;          // Per als botons de Canvas (UnityEngine.UI.Button)
 using TMPro;
 using UnityEngine.SceneManagement;
+using Unity.Netcode;
+using UnityEngine.UIElements;  // Per al UIDocument (UnityEngine.UIElements.Button)
+
+// =================================================================================
+// SCRIPT: GameUIManager
+// DESCRIPCIÓ: Gestió de la UI de joc. Controla panells, botons i desconnexió.
+//             CS0104 resolt: Button de Canvas = UnityEngine.UI.Button
+//                            Button de UIDocument = UnityEngine.UIElements.Button
+// =================================================================================
 
 public class GameUIManager : MonoBehaviour
 {
@@ -10,6 +19,12 @@ public class GameUIManager : MonoBehaviour
     public GameObject panelVictoria;
     public GameObject panelEspera;
     public GameObject panelOpcions;
+
+    [Header("UI Document (UIToolkit)")]
+    private UIDocument uidocument;
+    private VisualElement root;
+    private VisualElement contenedorDesconexion;
+    private UnityEngine.UIElements.Button botonVolver; // UIElements.Button per al UIDocument
 
     [Header("Text Game Over")]
     public TextMeshProUGUI textGameOver;
@@ -20,17 +35,64 @@ public class GameUIManager : MonoBehaviour
     [Header("Text Espera")]
     public TextMeshProUGUI textEspera;
 
-    [Header("Botons")]
-    public Button btnTornarJugar;
-    public Button btnMenuPrincipal;
-    public Button btnTancarOpcions;
+    [Header("Botons Canvas")]
+    public UnityEngine.UI.Button btnTornarJugar;    // UI.Button per al Canvas
+    public UnityEngine.UI.Button btnMenuPrincipal;  // UI.Button per al Canvas
+    public UnityEngine.UI.Button btnTancarOpcions;  // UI.Button per al Canvas
 
     private GameManager gameManager;
 
-    void Start()
+    // -------------------------------------------------------------------------
+    // CICLE DE VIDA
+    // -------------------------------------------------------------------------
+
+    private void OnEnable()
+    {
+        // Guard de nulitat: evita NullReferenceException si NetworkManager no existeix
+        if (NetworkManager.Singleton != null)
+        {
+            NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
+        }
+    }
+
+    private void OnDisable()
+    {
+        // Guard de nulitat: evita errors en tancar el joc mentre no hi ha sessió
+        if (NetworkManager.Singleton != null)
+        {
+            NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
+        }
+    }
+
+    private void Awake()
+    {
+        // Configuració del UIDocument (UIToolkit)
+        uidocument = GetComponent<UIDocument>();
+        if (uidocument != null)
+        {
+            root = uidocument.rootVisualElement;
+            contenedorDesconexion = root.Q("contenedor-desconexion");
+            botonVolver = root.Q<UnityEngine.UIElements.Button>("boton-volver");
+
+            // El panell de desconnexió comença ocult
+            if (contenedorDesconexion != null)
+            {
+                contenedorDesconexion.style.display = DisplayStyle.None;
+            }
+        }
+    }
+
+    private void Start()
     {
         gameManager = Object.FindFirstObjectByType<GameManager>();
 
+        // Botó del UIDocument
+        if (botonVolver != null)
+        {
+            botonVolver.clicked += VolverAlMenu;
+        }
+
+        // Botons del Canvas
         if (btnTornarJugar != null)
             btnTornarJugar.onClick.AddListener(TornarJugar);
 
@@ -43,7 +105,68 @@ public class GameUIManager : MonoBehaviour
         MostrarPanelEspera();
     }
 
-    void MostrarPanelEspera()
+    // -------------------------------------------------------------------------
+    // DESCONNEXIÓ
+    // -------------------------------------------------------------------------
+
+    private void OnClientDisconnected(ulong clientId)
+    {
+        Debug.Log("[GameUIManager] Cliente desconectado: " + clientId);
+
+        // Mostrem el panell NOMÉS si el HOST ha tancat la partida i nosaltres som el client.
+        // NetworkManager.ServerClientId és sempre 0 (l'ID del Host/Servidor).
+        if (NetworkManager.Singleton == null) return;
+
+        bool hostHaTancat = !NetworkManager.Singleton.IsServer
+                            && clientId == NetworkManager.ServerClientId;
+
+        if (hostHaTancat)
+        {
+            if (contenedorDesconexion != null)
+            {
+                contenedorDesconexion.style.display = DisplayStyle.Flex;
+            }
+            Debug.Log("[GameUIManager] El Host ha tancat la partida. Mostrant panell de desconnexió.");
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // NAVEGACIÓ
+    // -------------------------------------------------------------------------
+
+    public void VolverAlMenu()
+    {
+        if (NetworkManager.Singleton != null)
+        {
+            NetworkManager.Singleton.Shutdown();
+        }
+        SceneManager.LoadScene("Menu");
+    }
+
+    public void AnarMenuPrincipal()
+    {
+        if (NetworkManager.Singleton != null)
+        {
+            NetworkManager.Singleton.Shutdown();
+        }
+        SceneManager.LoadScene("Menu");
+    }
+
+    public void TornarJugar()
+    {
+        SceneManager.LoadScene("Joc");
+    }
+
+    public void SortirJoc()
+    {
+        Application.Quit();
+    }
+
+    // -------------------------------------------------------------------------
+    // PANELLS
+    // -------------------------------------------------------------------------
+
+    private void MostrarPanelEspera()
     {
         if (panelEspera != null)
             panelEspera.SetActive(true);
@@ -67,7 +190,7 @@ public class GameUIManager : MonoBehaviour
         }
     }
 
-    void AmagarEspera()
+    private void AmagarEspera()
     {
         if (panelEspera != null)
             panelEspera.SetActive(false);
@@ -103,28 +226,9 @@ public class GameUIManager : MonoBehaviour
             panelOpcions.SetActive(true);
     }
 
-    void TancarOpcions()
+    private void TancarOpcions()
     {
         if (panelOpcions != null)
             panelOpcions.SetActive(false);
-    }
-
-    public void TornarJugar()
-    {
-        SceneManager.LoadScene("Joc");
-    }
-
-    public void AnarMenuPrincipal()
-    {
-        if (Unity.Netcode.NetworkManager.Singleton != null)
-        {
-            Unity.Netcode.NetworkManager.Singleton.Shutdown();
-        }
-        SceneManager.LoadScene("Menu");
-    }
-
-    public void SortirJoc()
-    {
-        Application.Quit();
     }
 }
