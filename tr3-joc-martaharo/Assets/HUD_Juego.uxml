@@ -1,6 +1,12 @@
-<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-    <ui:VisualElement name="contenedor-desconexion" style="flex-grow: 1; display: none;">
-        <ui:Label text="Label" />
-        <ui:Button text="Button" name="boton-volver" />
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/_Project/Scripts/UI/Resultats.uss?fileID=7433441132597879392&amp;guid=a9e18ffc1dfe363c18ae67c8eb2a7ef7&amp;type=3#Resultats" />
+    <Style src="project://database/Assets/HUD_Estils.uss?fileID=7433441132597879392&amp;guid=c77237941cbf3c6f9b9120f94dfc131a&amp;type=3#HUD_Estils" />
+    <ui:VisualElement name="contenedor-desconexion" class="contenedor-desconexion" style="display: none;">
+        <ui:VisualElement class="panel-alerta">
+            <ui:Label text="JUGADOR DESCONNECTAT" class="titol-alerta" style="white-space: normal; font-size: 30px;" />
+            <ui:Label name="label-missatge" text="Un jugador ha abandonat la partida" class="missatge" style="white-space: normal;" />
+            <ui:Button name="btn-tornar-lobby" text="TORNAR AL LOBBY" class="boto-neon" />
+            <ui:Button name="btn-sortir-menu" text="SORTIR AL MENÚ" class="boto-neon" />
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

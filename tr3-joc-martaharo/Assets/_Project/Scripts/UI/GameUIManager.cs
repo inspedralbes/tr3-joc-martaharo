@@ -1,54 +1,82 @@
 using UnityEngine;
-using UnityEngine.UI;          // Per als botons de Canvas (UnityEngine.UI.Button)
-using TMPro;
 using UnityEngine.SceneManagement;
 using Unity.Netcode;
-using UnityEngine.UIElements;  // Per al UIDocument (UnityEngine.UIElements.Button)
+using UnityEngine.UIElements;
+using Button = UnityEngine.UIElements.Button;
 
 // =================================================================================
-// SCRIPT: GameUIManager
-// DESCRIPCIÓ: Gestió de la UI de joc. Controla panells, botons i desconnexió.
-//             CS0104 resolt: Button de Canvas = UnityEngine.UI.Button
-//                            Button de UIDocument = UnityEngine.UIElements.Button
+// SCRIPT: GameUIManager (MINIMALISTA)
+// DESCRIPCIÓ: Gestiona ÚNICAMENT la pantalla de desconnexió via UI Toolkit (neó).
+//             Tot el Canvas (GameOver, Victòria, Espera) ha estat eliminat.
 // =================================================================================
 
 public class GameUIManager : MonoBehaviour
 {
-    [Header("Panells UI")]
-    public GameObject panelGameOver;
-    public GameObject panelVictoria;
-    public GameObject panelEspera;
-    public GameObject panelOpcions;
+    // -------------------------------------------------------------------------
+    // VARIABLES PRIVADES — UI Toolkit
+    // -------------------------------------------------------------------------
 
-    [Header("UI Document (UIToolkit)")]
     private UIDocument uidocument;
     private VisualElement root;
     private VisualElement contenedorDesconexion;
-    private UnityEngine.UIElements.Button botonVolver; // UIElements.Button per al UIDocument
-
-    [Header("Text Game Over")]
-    public TextMeshProUGUI textGameOver;
-
-    [Header("Text Victoria")]
-    public TextMeshProUGUI textVictoria;
-
-    [Header("Text Espera")]
-    public TextMeshProUGUI textEspera;
-
-    [Header("Botons Canvas")]
-    public UnityEngine.UI.Button btnTornarJugar;    // UI.Button per al Canvas
-    public UnityEngine.UI.Button btnMenuPrincipal;  // UI.Button per al Canvas
-    public UnityEngine.UI.Button btnTancarOpcions;  // UI.Button per al Canvas
-
-    private GameManager gameManager;
+    private Label labelMissatge;
+    private Button btnTornarLobby;
+    private Button btnSortirMenu;
 
     // -------------------------------------------------------------------------
     // CICLE DE VIDA
     // -------------------------------------------------------------------------
 
+    private void Awake()
+    {
+        Debug.Log(">>> SCRIPT ACTIVAT A: " + gameObject.name);
+
+        uidocument = GetComponent<UIDocument>();
+        if (uidocument == null)
+        {
+            Debug.LogError(">>> ERROR CRÍTIC: No s'ha trobat cap UIDocument en aquest GameObject!");
+            return;
+        }
+
+        root = uidocument.rootVisualElement;
+
+        contenedorDesconexion = root.Q("contenedor-desconexion");
+
+        if (contenedorDesconexion == null)
+        {
+            Debug.LogError(">>> ERROR CRÍTIC: No s'ha trobat 'contenedor-desconexion' al UXML. " +
+                           "Revisa el nom al UI Builder!");
+            return;
+        }
+
+        // Aplicar classes USS programàticament per activar els estils de neó
+        contenedorDesconexion.AddToClassList("contenedor-desconexion");
+        contenedorDesconexion.style.display = DisplayStyle.None;
+
+        labelMissatge  = root.Q<Label>("label-missatge");
+        btnTornarLobby = root.Q<Button>("btn-tornar-lobby");
+        btnSortirMenu  = root.Q<Button>("btn-sortir-menu");
+
+        if (btnTornarLobby != null)
+        {
+            btnTornarLobby.AddToClassList("boto-neon");
+            btnTornarLobby.clicked += BotoTornarLobby;
+        }
+
+        if (btnSortirMenu != null)
+        {
+            btnSortirMenu.AddToClassList("boto-neon");
+            btnSortirMenu.clicked += BotoSortirMenu;
+        }
+
+        if (labelMissatge != null)
+        {
+            labelMissatge.AddToClassList("missatge");
+        }
+    }
+
     private void OnEnable()
     {
-        // Guard de nulitat: evita NullReferenceException si NetworkManager no existeix
         if (NetworkManager.Singleton != null)
         {
             NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
@@ -57,52 +85,24 @@ public class GameUIManager : MonoBehaviour
 
     private void OnDisable()
     {
-        // Guard de nulitat: evita errors en tancar el joc mentre no hi ha sessió
         if (NetworkManager.Singleton != null)
         {
             NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
         }
     }
 
-    private void Awake()
+    // -------------------------------------------------------------------------
+    // UPDATE — PROVA LOCAL (Tecla K)
+    // -------------------------------------------------------------------------
+
+    private void Update()
     {
-        // Configuració del UIDocument (UIToolkit)
-        uidocument = GetComponent<UIDocument>();
-        if (uidocument != null)
+        // Prem K per simular una desconnexió i provar la UI sense xarxa
+        if (Input.GetKeyDown(KeyCode.K))
         {
-            root = uidocument.rootVisualElement;
-            contenedorDesconexion = root.Q("contenedor-desconexion");
-            botonVolver = root.Q<UnityEngine.UIElements.Button>("boton-volver");
-
-            // El panell de desconnexió comença ocult
-            if (contenedorDesconexion != null)
-            {
-                contenedorDesconexion.style.display = DisplayStyle.None;
-            }
+            Debug.Log("[PROVA] Tecla K premuda — simulant desconnexió del client 999");
+            OnClientDisconnected(999);
         }
-    }
-
-    private void Start()
-    {
-        gameManager = Object.FindFirstObjectByType<GameManager>();
-
-        // Botó del UIDocument
-        if (botonVolver != null)
-        {
-            botonVolver.clicked += VolverAlMenu;
-        }
-
-        // Botons del Canvas
-        if (btnTornarJugar != null)
-            btnTornarJugar.onClick.AddListener(TornarJugar);
-
-        if (btnMenuPrincipal != null)
-            btnMenuPrincipal.onClick.AddListener(AnarMenuPrincipal);
-
-        if (btnTancarOpcions != null)
-            btnTancarOpcions.onClick.AddListener(TancarOpcions);
-
-        MostrarPanelEspera();
     }
 
     // -------------------------------------------------------------------------
@@ -111,124 +111,81 @@ public class GameUIManager : MonoBehaviour
 
     private void OnClientDisconnected(ulong clientId)
     {
-        Debug.Log("[GameUIManager] Cliente desconectado: " + clientId);
+        Debug.Log("[DESCONNEXIO] Client desconnectat: " + clientId);
 
-        // Mostrem el panell NOMÉS si el HOST ha tancat la partida i nosaltres som el client.
-        // NetworkManager.ServerClientId és sempre 0 (l'ID del Host/Servidor).
-        if (NetworkManager.Singleton == null) return;
+        // Forçar que el UIDocument estigui actiu
+        if (uidocument != null)
+            uidocument.enabled = true;
 
-        bool hostHaTancat = !NetworkManager.Singleton.IsServer
-                            && clientId == NetworkManager.ServerClientId;
-
-        if (hostHaTancat)
+        // Mostrem el panell per a qualsevol desconnexió
+        if (contenedorDesconexion != null)
         {
-            if (contenedorDesconexion != null)
-            {
-                contenedorDesconexion.style.display = DisplayStyle.Flex;
-            }
-            Debug.Log("[GameUIManager] El Host ha tancat la partida. Mostrant panell de desconnexió.");
+            contenedorDesconexion.BringToFront();
+            contenedorDesconexion.style.display = DisplayStyle.Flex;
         }
-    }
 
-    // -------------------------------------------------------------------------
-    // NAVEGACIÓ
-    // -------------------------------------------------------------------------
-
-    public void VolverAlMenu()
-    {
-        if (NetworkManager.Singleton != null)
+        if (NetworkManager.Singleton == null)
         {
-            NetworkManager.Singleton.Shutdown();
+            // Mode de prova sense xarxa (p. ex. tecla K)
+            if (labelMissatge != null)
+                labelMissatge.text = "Desconnexió simulada (mode prova)";
+            return;
         }
-        SceneManager.LoadScene("Menu");
-    }
 
-    public void AnarMenuPrincipal()
-    {
-        if (NetworkManager.Singleton != null)
+        // Intentem obtenir el nom real del jugador via el mapa del LobbyManager
+        string nomJugador = null;
+        if (LobbyManager.nomPerClientId != null &&
+            LobbyManager.nomPerClientId.TryGetValue(clientId, out string nomTrobat))
         {
-            NetworkManager.Singleton.Shutdown();
+            nomJugador = nomTrobat;
         }
-        SceneManager.LoadScene("Menu");
-    }
 
-    public void TornarJugar()
-    {
-        SceneManager.LoadScene("Joc");
-    }
+        // Determinem el motiu i construïm el missatge personalitzat
+        bool elHostHaMarxat = !NetworkManager.Singleton.IsServer
+                              && clientId == NetworkManager.ServerClientId;
 
-    public void SortirJoc()
-    {
-        Application.Quit();
-    }
-
-    // -------------------------------------------------------------------------
-    // PANELLS
-    // -------------------------------------------------------------------------
-
-    private void MostrarPanelEspera()
-    {
-        if (panelEspera != null)
-            panelEspera.SetActive(true);
-
-        if (panelGameOver != null)
-            panelGameOver.SetActive(false);
-
-        if (panelVictoria != null)
-            panelVictoria.SetActive(false);
-
-        if (MainMenuManager.isSinglePlayer)
+        string missatge;
+        if (elHostHaMarxat)
         {
-            if (textEspera != null)
-                textEspera.text = "Començant partida...";
-            Invoke("AmagarEspera", 2f);
+            missatge = "El Host ha tancat la partida";
+            Debug.Log("[DESCONNEXIO] El Host ha tancat la sala. Mostrant panell de desconnexió.");
+        }
+        else if (!string.IsNullOrEmpty(nomJugador))
+        {
+            // Tenim el nom real del jugador
+            missatge = $"El jugador {nomJugador} ha marxat";
+            Debug.Log($"[DESCONNEXIO] El jugador '{nomJugador}' (id: {clientId}) ha marxat.");
         }
         else
         {
-            if (textEspera != null)
-                textEspera.text = "Esperant un altre jugador...";
+            // No tenim el nom, usem l'id com a fallback
+            missatge = $"El Jugador {clientId} ha abandonat la partida";
+            Debug.Log("[DESCONNEXIO] Un jugador (id: " + clientId + ") ha abandonat la partida.");
         }
+
+        if (labelMissatge != null)
+            labelMissatge.text = missatge;
     }
 
-    private void AmagarEspera()
+    // -------------------------------------------------------------------------
+    // BOTONS
+    // -------------------------------------------------------------------------
+
+    public void BotoTornarLobby()
     {
-        if (panelEspera != null)
-            panelEspera.SetActive(false);
+        Debug.Log("[NAVEGACIO] Tancant xarxa per tornar al Lobby...");
+        if (NetworkManager.Singleton != null)
+            NetworkManager.Singleton.Shutdown();
+
+        SceneManager.LoadScene("Lobby");
     }
 
-    public void MostrarGameOver()
+    public void BotoSortirMenu()
     {
-        if (panelGameOver != null)
-            panelGameOver.SetActive(true);
+        Debug.Log("[NAVEGACIO] Tancant xarxa per sortir al Menú...");
+        if (NetworkManager.Singleton != null)
+            NetworkManager.Singleton.Shutdown();
 
-        if (panelVictoria != null)
-            panelVictoria.SetActive(false);
-
-        if (textGameOver != null)
-            textGameOver.text = "Game Over";
-    }
-
-    public void MostrarVictoria()
-    {
-        if (panelVictoria != null)
-            panelVictoria.SetActive(true);
-
-        if (panelGameOver != null)
-            panelGameOver.SetActive(false);
-
-        if (textVictoria != null)
-            textVictoria.text = "Has guanyat!";
-    }
-
-    public void MostrarOpcions()
-    {
-        if (panelOpcions != null)
-            panelOpcions.SetActive(true);
-    }
-
-    private void TancarOpcions()
-    {
-        if (panelOpcions != null)
-            panelOpcions.SetActive(false);
+        SceneManager.LoadScene("Menu");
     }
 }

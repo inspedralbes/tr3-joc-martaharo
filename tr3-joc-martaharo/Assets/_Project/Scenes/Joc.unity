@@ -492,6 +492,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1206451236}
   - component: {fileID: 1206451235}
+  - component: {fileID: 1206451237}
   m_Layer: 0
   m_Name: UI_Manager
   m_TagString: Untagged
@@ -514,7 +515,7 @@ MonoBehaviour:
   m_PanelSettings: {fileID: 11400000, guid: ce14f222d1c4676be8a169b99350ce80, type: 2}
   m_ParentUI: {fileID: 0}
   sourceAsset: {fileID: 9197481963319205126, guid: b42b4807cd321d15ab53aadf90975dfd, type: 3}
-  m_SortingOrder: 0
+  m_SortingOrder: 11
   m_WorldSpaceSizeMode: 1
   m_WorldSpaceWidth: 1920
   m_WorldSpaceHeight: 1080
@@ -533,6 +534,28 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1206451237
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1206451234}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f924cde23cfe9b3ca8626dd4d2312433, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  panelGameOver: {fileID: 0}
+  panelVictoria: {fileID: 0}
+  panelEspera: {fileID: 0}
+  panelOpcions: {fileID: 0}
+  textGameOver: {fileID: 0}
+  textVictoria: {fileID: 0}
+  textEspera: {fileID: 0}
+  btnTornarJugar: {fileID: 0}
+  btnMenuPrincipal: {fileID: 0}
+  btnTancarOpcions: {fileID: 0}
 --- !u!1 &1313778642
 GameObject:
   m_ObjectHideFlags: 0

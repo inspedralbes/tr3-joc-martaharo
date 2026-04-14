@@ -12,6 +12,9 @@ public class LobbyManager : NetworkBehaviour
     public static string roomId;
     public static string localPlayerName;
 
+    // Mapa clientId → nom, per identificar jugadors en desconnexions
+    public static Dictionary<ulong, string> nomPerClientId = new Dictionary<ulong, string>();
+
     [Header("UI References")]
     private Label labelCodi;
     private Label labelJugadors;
@@ -77,14 +80,14 @@ public class LobbyManager : NetworkBehaviour
         if (IsServer)
         {
             codiSalaSincronitzat.Value = MainMenuManager.roomCode;
-            // El servidor afegeix el seu propi nom
-            AfegirNomALlista(AuthManager.username);
+            // El servidor afegeix el seu propi nom (clientId del host és sempre 0)
+            AfegirNomALlista(AuthManager.username, NetworkManager.Singleton.LocalClientId);
             // BUG FIX: Escoltar quan nous clients es connecten per afegir-los a la llista
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
         }
         else
         {
-            // El client envia el seu nom al servidor
+            // El client envia el seu nom al servidor (el RPC anota automàticament el senderId)
             AfegirNomALlistaServerRpc(AuthManager.username);
         }
 
@@ -115,12 +118,23 @@ public class LobbyManager : NetworkBehaviour
     }
 
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-    private void AfegirNomALlistaServerRpc(string nom) { AfegirNomALlista(nom); }
+    private void AfegirNomALlistaServerRpc(string nom, RpcParams rpcParams = default)
+    {
+        ulong senderId = rpcParams.Receive.SenderClientId;
+        AfegirNomALlista(nom, senderId);
+    }
 
-    private void AfegirNomALlista(string nom)
+    private void AfegirNomALlista(string nom, ulong clientId = 0)
     {
         FixedString32Bytes fixedNom = nom;
         if (!listaNombres.Contains(fixedNom)) listaNombres.Add(fixedNom);
+
+        // Guardar mapatge clientId → nom per a la pantalla de desconnexió
+        if (!nomPerClientId.ContainsKey(clientId))
+        {
+            nomPerClientId[clientId] = nom;
+            Debug.Log($"[LobbyManager] Mapejat clientId {clientId} → '{nom}'");
+        }
     }
 
     private void OnLlistaNomsChanged(NetworkListEvent<FixedString32Bytes> changeEvent) { ActualizarInterfaz(); }
