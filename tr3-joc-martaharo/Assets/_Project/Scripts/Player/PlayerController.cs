@@ -288,17 +288,7 @@ public class PlayerController : NetworkBehaviour
 
         if (btnTornar != null)
         {
-            btnTornar.clicked += () =>
-            {
-                if (NetworkManager.Singleton != null)
-                {
-                    NetworkManager.Singleton.SceneManager.LoadScene("Lobby", LoadSceneMode.Single);
-                }
-                else
-                {
-                    SceneManager.LoadScene("Lobby");
-                }
-            };
+            btnTornar.clicked += BotoTornarLobby;
         }
 
         if (btnSortir != null)
@@ -350,6 +340,17 @@ public class PlayerController : NetworkBehaviour
 
     public override void OnDestroy()
     {
+        haArribatAMeta = false;
         base.OnDestroy();
+    }
+
+    public void BotoTornarLobby()
+    {
+        if (NetworkManager.Singleton != null)
+        {
+            Debug.Log("[NAVEGACIO] Tancant xarxa per tornar al Lobby...");
+            NetworkManager.Singleton.Shutdown();
+        }
+        UnityEngine.SceneManagement.SceneManager.LoadScene("Lobby");
     }
 }
