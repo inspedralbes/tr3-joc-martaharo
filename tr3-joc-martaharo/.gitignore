@@ -1,4 +1,4 @@
-# --- Carpetes temporals de Unity (NO es pugen) ---
+# --- Carpetes temporals i de sistema de Unity (NO es pugen) ---
 /[Ll]ibrary/
 /[Tt]emp/
 /[Oo]bj/
@@ -7,19 +7,27 @@
 /[Mm]emoryCaptures/
 /[Aa]ssets/AssetStoreTools*
 
-# --- Fitxers de configuració de Visual Studio (NO es pugen) ---
+# --- Fitxers de configuració de Visual Studio / IDEs ---
 *.csproj
 *.sln
 *.suo
 *.user
 *.userosscache
 *.sln.docstates
+*.userprefs
+.vs/
 
-# --- Metadades i Prefabs (S'HAN DE PUJAR SEMPRE) ---
-# Aquestes línies no cal posar-les perquè Git ja les agafa per defecte 
-# si no estan a la llista d'ignorats, però és important saber que
-# fitxers .meta i .prefab NO han d'estar mai en aquest document.
+# --- Forçar la pujada d'Assets importants ---
+# A vegades algunes regles genèriques poden bloquejar fitxers. 
+# Aquestes línies asseguren que Unity pugi el que toca:
+!*.meta
+!*.prefab
+!*.controller
+!*.anim
+!*.unity
+!*.asset
 
 # --- Sistema operatiu ---
 .DS_Store
 Thumbs.db
+Desktop.ini
