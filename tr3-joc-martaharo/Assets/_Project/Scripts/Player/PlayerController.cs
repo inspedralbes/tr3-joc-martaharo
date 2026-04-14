@@ -4,11 +4,18 @@ using UnityEngine;
 using System.Reflection;
 using System.Collections;
 
+// =================================================================================
+// SCRIPT: PlayerController
+// UBICACIÓ: Assets/_Project/Scripts/Player/
+// DESCRIPCIÓ: Control de moviment per a multijugador Unity 6 (Netcode).
+//             Gestiona autoritat, colors, càmera, animacions i reaparició.
+// =================================================================================
+
 public class PlayerController : NetworkBehaviour
 {
     [Header("Identitat i Estètica")]
     public string playerId;
-    public Sprite spriteBlanco;
+    public Sprite spriteBlanco; // Sprite per al Client
 
     [Header("Moviment")]
     public float speed = 5f;
@@ -29,6 +36,7 @@ public class PlayerController : NetworkBehaviour
         anim = GetComponent<Animator>();
         sr = GetComponent<SpriteRenderer>();
 
+        // Correció per al NetworkAnimator amb Reflection
         NetworkAnimator networkAnim = GetComponent<NetworkAnimator>();
         if (networkAnim != null)
         {
@@ -47,6 +55,7 @@ public class PlayerController : NetworkBehaviour
     {
         base.OnNetworkSpawn();
 
+        // LÒGICA DE COLOR: Si no som el servidor, canviem el sprite al blanc
         if (!IsServer && spriteBlanco != null)
         {
             GetComponent<SpriteRenderer>().sprite = spriteBlanco;
@@ -73,33 +82,6 @@ public class PlayerController : NetworkBehaviour
             }
             DesactivarComponentsRemots();
         }
-    }
-
-    private void Update()
-    {
-        // FUERZA DE POSICIÓN: Asegurar Z = 0 siempre
-        transform.position = new Vector3(transform.position.x, transform.position.y, 0);
-
-        if (!IsOwner) return;
-
-        inputX = Input.GetAxisRaw("Horizontal");
-        inputY = Input.GetAxisRaw("Vertical");
-
-        if (anim != null)
-        {
-            anim.SetFloat("VelocitatX", inputX);
-            anim.SetFloat("VelocitatY", inputY);
-            float magnitud = new Vector2(inputX, inputY).magnitude;
-            anim.SetFloat("Velocitat", magnitud);
-        }
-    }
-
-    void FixedUpdate()
-    {
-        if (!IsOwner) return;
-
-        Vector2 moviment = new Vector2(inputX, inputY).normalized;
-        if (rb != null) rb.linearVelocity = moviment * speed;
     }
 
     private System.Collections.IEnumerator CorrutinaCamaraBuildFix()
@@ -133,61 +115,61 @@ public class PlayerController : NetworkBehaviour
         if (listener != null) listener.enabled = false;
     }
 
-    // --- MÉTODO PÚBLICO RECIBIR DAÑO (llamado por EnemyAI) ---
-    public void RecibirDanyo()
+    void Update()
     {
-        Debug.Log($"[Player] RecibirDanyo() llamado. IsServer: {IsServer}");
+        if (!IsOwner) return;
 
-        // Si NO es el servidor, el cliente envía petición RPC al servidor
-        if (!IsServer)
+        inputX = Input.GetAxisRaw("Horizontal");
+        inputY = Input.GetAxisRaw("Vertical");
+
+        if (anim != null)
         {
-            Debug.Log("[Player] Enviando SolicitarDanyoServerRpc...");
-            SolicitarDanyoServerRpc();
-            return;
-        }
-
-        // Si ES el servidor, procesar directamente
-        Debug.Log("[Player] Procesando daño en servidor...");
-        ProcesarDanyo();
-    }
-
-    // --- RPC: CLIENTE PIDE DAÑO AL SERVIDOR ---
-    [Rpc(SendTo.Server)]
-    private void SolicitarDanyoServerRpc()
-    {
-        if (!IsServer) return;
-        Debug.Log("[SERVER] Solicitud de daño recibida.");
-        ProcesarDanyo();
-    }
-
-    // --- LÓGICA DE DAÑO (solo servidor) ---
-    private void ProcesarDanyo()
-    {
-        if (esInvulnerable || estaInvulnerable.Value) return;
-
-        esInvulnerable = true;
-        estaInvulnerable.Value = true;
-        vidaSincronizada.Value--;
-
-        Debug.Log($"[SERVER] Daño procesado. Jugador: {OwnerClientId}. Vida restante: {vidaSincronizada.Value}");
-
-        // Enviar efecto visual a TODOS
-        MostrarEfectoRojoRpc();
-
-        StartCoroutine(QuitarInvulnerabilidad());
-
-        // Si vida <= 0, ejecutar respawn
-        if (vidaSincronizada.Value <= 0)
-        {
-            MandarAlSpawn();
+            anim.SetFloat("VelocitatX", inputX);
+            anim.SetFloat("VelocitatY", inputY);
+            float magnitud = new Vector2(inputX, inputY).magnitude;
+            anim.SetFloat("Velocitat", magnitud);
         }
     }
 
-    // --- EFECTO VISUAL (todos ven el color rojo) ---
-    [Rpc(SendTo.Everyone)]
-    private void MostrarEfectoRojoRpc()
+    void FixedUpdate()
     {
-        Debug.Log("[Player] Mostrando efecto rojo...");
+        if (!IsOwner) return;
+
+        Vector2 moviment = new Vector2(inputX, inputY).normalized;
+        if (rb != null) rb.linearVelocity = moviment * speed;
+    }
+
+ // --- SISTEMA DE VIDA (Sincronizado) ---
+   public void RecibirDanyo()
+{
+    if (!IsServer) return; 
+    if (esInvulnerable || estaInvulnerable.Value) return;
+
+    esInvulnerable = true;
+    estaInvulnerable.Value = true;
+    vidaSincronizada.Value--; 
+
+    MostrarEfectoDanyoClientRpc();
+    StartCoroutine(QuitarInvulnerabilidad());
+
+    if (vidaSincronizada.Value <= 0)
+    {
+        Respawn();
+        vidaSincronizada.Value = 2;
+        estaInvulnerable.Value = false;
+        esInvulnerable = false;
+    }
+}
+
+private IEnumerator QuitarInvulnerabilidad()
+{
+    yield return new WaitForSeconds(1f);
+    esInvulnerable = false;
+    estaInvulnerable.Value = false;
+}
+    [ClientRpc]
+    private void MostrarEfectoDanyoClientRpc()
+    {
         StartCoroutine(EfectoVisualDanyo());
     }
 
@@ -200,58 +182,46 @@ public class PlayerController : NetworkBehaviour
         if (sr != null) sr.color = Color.white;
     }
 
-    // --- RESPAWN CON TELEPORT INFALIBLE ---
-    private void MandarAlSpawn()
+    public override void OnNetworkDespawn()
+{
+    // Solo el Servidor tiene permiso para cambiar el valor de una NetworkVariable
+    if (IsServer && estaInvulnerable != null)
     {
-        if (!IsServer) return;
+        estaInvulnerable.Value = false;
+    }
+    
+    base.OnNetworkDespawn();
+}
+
+    private System.Collections.IEnumerator InvulnerabilidadTemporal()
+    {
+        esInvulnerable = true;
+        if (sr != null) sr.color = Color.red;
+        yield return new WaitForSeconds(1f);
+        if (sr != null) sr.color = Color.white;
+        esInvulnerable = false;
+    }
+
+   // --- REAPARICIÓ (RESPAWN) ---
+    public void Respawn() 
+    {
+        // Solo el servidor tiene permiso para mover objetos físicamente
+        // y que ese movimiento se replique a todos.
+        if (!IsServer) return; 
 
         GameObject spawnPoint = GameObject.FindWithTag("Respawn");
-        
-        if (spawnPoint == null)
-        {
-            Debug.LogError("[SERVER] ERROR: No se encontró el objeto con Tag 'Respawn'.");
-            return;
-        }
+        Vector3 posicionDestino = (spawnPoint != null) ? spawnPoint.transform.position : Vector3.zero;
 
-        Vector3 spawnPos = spawnPoint.transform.position;
-        Quaternion spawnRot = spawnPoint.transform.rotation;
+        // Al cambiar la posición en el Servidor, el NetworkTransform 
+        // se encarga de avisar a los demás automáticamente.
+        transform.position = posicionDestino;
 
-        // USO OBLIGATORIO DE .TELEPORT() - GetComponent<NetworkTransform>()
-        NetworkTransform nt = GetComponent<NetworkTransform>();
-        if (nt != null)
-        {
-            nt.Teleport(spawnPos, spawnRot, transform.localScale);
-            Debug.Log($"[SERVER] Teleport ejecutado para jugador {OwnerClientId} en posición {spawnPos}");
-        }
-
-        if (rb != null)
+        if (rb != null) 
         {
             rb.linearVelocity = Vector2.zero;
         }
-
-        // RESET DE VIDA A 2
-        vidaSincronizada.Value = 2;
-        estaInvulnerable.Value = false;
-        esInvulnerable = false;
-
-        Debug.Log($"[SERVER] Jugador {OwnerClientId} enviado al spawn en {spawnPos}. Vida reseteada a 2.");
-    }
-
-    private IEnumerator QuitarInvulnerabilidad()
-    {
-        yield return new WaitForSeconds(1f);
-        esInvulnerable = false;
-        if (IsServer)
-        {
-            estaInvulnerable.Value = false;
-        }
-    }
-
-    public override void OnNetworkDespawn()
-    {
-        base.OnNetworkDespawn();
-        if (estaInvulnerable != null && IsServer)
-            estaInvulnerable.Value = false;
+        
+        Debug.Log($"[SERVER] Jugador {OwnerClientId} reaparecido en {posicionDestino}");
     }
 
     public override void OnDestroy()
