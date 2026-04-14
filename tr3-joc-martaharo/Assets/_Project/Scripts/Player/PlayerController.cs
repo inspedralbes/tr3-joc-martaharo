@@ -147,6 +147,18 @@ public class PlayerController : NetworkBehaviour
         GetComponent<ClientNetworkTransform>().Teleport(spawnPos, Quaternion.identity, transform.localScale);
     }
 
+    [Rpc(SendTo.Everyone, InvokePermission = RpcInvokePermission.Everyone)]
+    public void EfectoDanyoVisualRpc()
+    {
+        GetComponent<SpriteRenderer>().color = Color.red;
+        Invoke(nameof(ResetColor), 0.2f);
+    }
+
+    private void ResetColor()
+    {
+        GetComponent<SpriteRenderer>().color = Color.white;
+    }
+
     public override void OnNetworkDespawn()
     {
         base.OnNetworkDespawn();

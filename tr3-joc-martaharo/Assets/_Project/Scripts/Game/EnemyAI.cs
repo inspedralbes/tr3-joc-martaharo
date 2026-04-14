@@ -95,6 +95,7 @@ public class EnemyAI : NetworkBehaviour
         if (other.TryGetComponent<PlayerController>(out PlayerController player))
         {
             player.RecibirDanyoRpc();
+            player.EfectoDanyoVisualRpc();
         }
     }
 }
