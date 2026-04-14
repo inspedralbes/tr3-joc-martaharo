@@ -15,9 +15,36 @@
 - **Càmera**: El script `SeguimentOcell` busca dinàmicament el target tras canvis d'escena amb corrutines de reintents.
 - **Diferenciació**: Swap automàtic a `spriteBlanco` per als clients (`OwnerClientId != 0`).
 
-### 4. Reaparició (Respawn)
-- **Lògica**: Sincronitzat via `ClientRpc`. El servidor envia l'ordre i el client propietari executa el moviment a `(0,0,0)`.
+### 4. Sistema de Victòria i Ranking
+- **Inici de Partida**: El Servidor inicialitza `NetworkVariable<float> startTime` en `OnNetworkSpawn()` amb `Time.time`.
+- **Detecció de Meta**: `OnTriggerEnter2D` comprova el tag "Finish". Si és vera i el servidor:
+  - Calcula `durada = Time.time - startTime.Value`
+  - Envia POST a `http://localhost:3000/api/rankings` amb format JSON:
+    ```json
+    { "username": "...", "puntuacio": durada, "tipus": "MULTIPLAYER", "durada": durada }
+    ```
+  - Executa `FinalitzarPartidaRpc(username, durada)` per mostrar resultats a tots els clients.
 
-### 5. Robustesa del Sistema
+### 5. Interfície de Resultats
+- **UIDocument**: Utilitza `Resultats.uxml` amb panel `display: none` inicialment.
+- **RPC FinalitzarPartidaRpc**: `[Rpc(SendTo.Everyone)]` que:
+  - Activa el panel amb `display: Flex`
+  - Formata temps com a `MM:SS`
+  - Assigna botons: `btn-tornar` → Lobby, `btn-sortir` → MainMenu
+
+### 6. Integració MongoDB (Rankings)
+- **Col·lecció**: MongoDB `rankings` emmagatzema:
+  - `username`: Nom del jugador (string)
+  - `puntuacio`: Temps en segons (float)
+  - `tipus`: "MULTIPLAYER" o "SOLO" (string)
+  - `durada`: Alias de puntuacio per compatibilitat
+- **Endpoint API**: `POST /api/rankings` rep JSON i desa a la col·lecció
+
+### 7. Reaparició (Respawn)
+- **Lògicase via `ClientNetworkTransform.Teleport()` amb autoritat del propietari.
+- **Forçat d'Eix Z**: `transform.position.z = 0f` en Update per evitar que els jugadors passin sota l'enemic.
+
+### 9. Robustesa del Sistema
 - **Alliberament de Ports**: Shutdown explícit en `OnDestroy` i `OnApplicationQuit` per evitar el bloqueig del port 7777.
 - **Diagnòstics**: Logging detallat de les respostes JSON del servidor per a debugging ràpid.
+- **Tancament de Partida**: Flag `partidaAcabada` impedeix múltiples execucions simultànies.

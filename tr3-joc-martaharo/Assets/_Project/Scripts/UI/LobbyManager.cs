@@ -160,7 +160,7 @@ public class LobbyManager : NetworkBehaviour
 
         if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
         {
-            Debug.LogError($"[LobbyManager] Error: Xarxa no escoltant. IsClient:{IsClient}, IsServer:{IsServer}");
+            Debug.LogError($"[LobbyManager] ERROR: La xarxa no s'ha iniciat correctament. IsClient: {IsClient}, IsServer: {IsServer}. Comprova que el NetworkManager estigui actiu abans de prémer el botó.");
             return;
         }
 
