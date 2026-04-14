@@ -34,8 +34,7 @@ public class EnemyAI : NetworkBehaviour
 
     private void Update()
     {
-        // FUERZA DE POSICIÓN: Asegurar Z = 0 siempre
-        transform.position = new Vector3(transform.position.x, transform.position.y, 0);
+        transform.position = new Vector3(transform.position.x, transform.position.y, 0f);
 
         if (!IsServer) return;
 
@@ -89,26 +88,13 @@ public class EnemyAI : NetworkBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        // FUERZA DE POSICIÓN: Corregir Z del otro objeto
-        other.transform.position = new Vector3(other.transform.position.x, other.transform.position.y, 0);
+        other.transform.position = new Vector3(other.transform.position.x, other.transform.position.y, 0f);
 
-        Debug.Log("[Enemigo] Colisión detectada con: " + other.name);
-
-        // LLAMADA SEGURA: Obtener PlayerController y llamar a RecibirDanyo
-        if (other.TryGetComponent<PlayerController>(out PlayerController player))
-        {
-            Debug.Log("[Enemigo] PlayerController encontrado, llamando a RecibirDanyo()");
-            player.RecibirDanyo();
-        }
-    }
-
-    private void OnTriggerStay2D(Collider2D other)
-    {
-        other.transform.position = new Vector3(other.transform.position.x, other.transform.position.y, 0);
+        if (!IsServer) return;
 
         if (other.TryGetComponent<PlayerController>(out PlayerController player))
         {
-            player.RecibirDanyo();
+            player.RecibirDanyoRpc();
         }
     }
 }
