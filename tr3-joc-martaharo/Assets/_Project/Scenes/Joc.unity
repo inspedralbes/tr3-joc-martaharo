@@ -546,16 +546,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f924cde23cfe9b3ca8626dd4d2312433, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  panelGameOver: {fileID: 0}
-  panelVictoria: {fileID: 0}
-  panelEspera: {fileID: 0}
-  panelOpcions: {fileID: 0}
-  textGameOver: {fileID: 0}
-  textVictoria: {fileID: 0}
-  textEspera: {fileID: 0}
-  btnTornarJugar: {fileID: 0}
-  btnMenuPrincipal: {fileID: 0}
-  btnTancarOpcions: {fileID: 0}
 --- !u!1 &1313778642
 GameObject:
   m_ObjectHideFlags: 0
@@ -612,7 +602,7 @@ TilemapRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  - {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -10151,7 +10141,7 @@ TilemapRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  - {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -13203,7 +13193,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  - {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
