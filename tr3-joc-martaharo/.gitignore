@@ -38,3 +38,17 @@
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# --- Bloqueig de brossa del Servidor i Node ---
+**/node_modules/
+**/dist/
+**/.env
+**/.env.*
+
+# --- Fix per a la carpeta Packages ---
+/[Pp]ackages/*
+!/[Pp]ackages/manifest.json
+!/[Pp]ackages/packages-lock.json
+
+# --- Unity ocults ---
+.collabignore
