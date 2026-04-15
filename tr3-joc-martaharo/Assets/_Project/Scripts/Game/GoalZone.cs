@@ -97,9 +97,23 @@ public class GoalZone : MonoBehaviour
         // Si la meta està bloquejada, no es pot guanyar
         if (metaBloquejada || jaGuanyat) return;
 
-        // Comprovar si és un jugador (té el tag "Player" o "Meta")
-        if (altre.CompareTag("Player") || altre.CompareTag("Meta"))
+        // Comprovar si és un jugador (té el tag "Player" o "Finish")
+        if (altre.CompareTag("Player") || altre.CompareTag("Finish"))
         {
+            // En mode individual: comprovar si és el jugador o la IA
+            if (MainMenuManager.isSinglePlayer)
+            {
+                if (altre.CompareTag("Player"))
+                {
+                    GestionaraVictoria();
+                }
+                else if (altre.CompareTag("Finish"))
+                {
+                    DerrotaIA();
+                }
+                return;
+            }
+
             // Obtenir el playerId del jugador
             PlayerController jugador = altre.GetComponent<PlayerController>();
             
@@ -125,6 +139,22 @@ public class GoalZone : MonoBehaviour
                     }
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// La IA ha arrivat primer - el jugador perd.
+    /// </summary>
+    void DerrotaIA()
+    {
+        if (jaGuanyat) return;
+        jaGuanyat = true;
+
+        Debug.Log("DERROTA! La IA ha guanyat!");
+        
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.Defeat();
         }
     }
 

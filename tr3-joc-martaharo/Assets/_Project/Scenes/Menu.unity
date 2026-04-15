@@ -2942,6 +2942,8 @@ MonoBehaviour:
   missatgeCrear: {fileID: 879438322}
   campCodiSala: {fileID: 15147296}
   missatgeUnir: {fileID: 1346928000}
+  botPrefab: {fileID: 3803771214272378991, guid: 65492516400d0da5ead4e6c82467725d, type: 3}
+  spawnPoint: {fileID: 0}
 --- !u!1 &2080449158
 GameObject:
   m_ObjectHideFlags: 0

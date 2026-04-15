@@ -11,10 +11,15 @@ public class GameManager : MonoBehaviour
     private string roomId;
     private bool isMultiplayer;
     private bool gameFinished = false;
+    private bool isSinglePlayerMode;
 
     public GameObject gameOverPanel;
     public GameObject victoryPanel;
     public GameObject waitingPanel;
+
+    [Header("Prefabs Mode Individual")]
+    public GameObject playerPrefab;
+    public GameObject enemyPrefab;
 
     void Awake()
     {
@@ -23,6 +28,15 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
+        isSinglePlayerMode = PlayerPrefs.GetInt("EsModeIndividual", 0) == 1;
+        
+        if (isSinglePlayerMode)
+        {
+            PlayerPrefs.SetInt("EsModeIndividual", 0);
+            IniciarModeIndividual();
+            return;
+        }
+
         roomId = LobbyManager.roomId;
         if (string.IsNullOrEmpty(roomId))
             roomId = MainMenuManager.roomId;
@@ -36,6 +50,47 @@ public class GameManager : MonoBehaviour
 
         if (waitingPanel != null)
             waitingPanel.SetActive(false);
+        if (gameOverPanel != null)
+            gameOverPanel.SetActive(false);
+        if (victoryPanel != null)
+            victoryPanel.SetActive(false);
+    }
+
+    void IniciarModeIndividual()
+    {
+        Debug.Log("Iniciant Mode Individual...");
+        
+        // Buscar l'spawn point del bot a l'escena
+        GameObject spawnPointObj = GameObject.Find("BotSpawnPoint");
+        
+        if (playerPrefab != null)
+        {
+            Instantiate(playerPrefab);
+            Debug.Log("Player instanciat");
+        }
+        else
+        {
+            Debug.LogWarning("PlayerPrefab no assignat");
+        }
+
+        if (enemyPrefab != null)
+        {
+            if (spawnPointObj != null)
+            {
+                Instantiate(enemyPrefab, spawnPointObj.transform.position, Quaternion.identity);
+                Debug.Log("IA enemic instanciat a: " + spawnPointObj.transform.position);
+            }
+            else
+            {
+                Debug.LogWarning("BotSpawnPoint no trobat a l'escena. Instanciant a posició per defecte.");
+                Instantiate(enemyPrefab);
+            }
+        }
+        else
+        {
+            Debug.LogWarning("EnemyPrefab no assignat");
+        }
+
         if (gameOverPanel != null)
             gameOverPanel.SetActive(false);
         if (victoryPanel != null)
