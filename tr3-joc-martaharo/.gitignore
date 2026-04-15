@@ -17,9 +17,7 @@
 *.userprefs
 .vs/
 
-# --- Forçar la pujada d'Assets importants ---
-# A vegades algunes regles genèriques poden bloquejar fitxers. 
-# Aquestes línies asseguren que Unity pugi el que toca:
+# --- FORZAR LA SUBIDA DE ASSETS (MUY IMPORTANTE) ---
 !*.meta
 !*.prefab
 !*.controller
