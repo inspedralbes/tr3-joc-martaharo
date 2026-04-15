@@ -17,6 +17,10 @@
 *.userprefs
 .vs/
 
+# --- Seguretat i Configuració (Molt important NO pujar) ---
+.env
+.env.*
+
 # --- FORZAR LA SUBIDA DE ASSETS (MUY IMPORTANTE) ---
 !*.meta
 !*.prefab
