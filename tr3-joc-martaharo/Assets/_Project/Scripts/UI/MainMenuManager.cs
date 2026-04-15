@@ -27,11 +27,18 @@ public class MainMenuManager : MonoBehaviour
     public TextMeshProUGUI textCodiSala;
     public TextMeshProUGUI missatgeCrear;
 
-[Header("Formulari Unir-se a Sala")]
+    [Header("Formulari Unir-se a Sala")]
     public TMP_InputField campCodiSala;
     public TextMeshProUGUI missatgeUnir;
     public Label labelError;
 
+    // Variables estátiques per passar dades entre escenes
+    public static string roomId { get; private set; }
+    public static string roomCode { get; private set; }
+    public static string nomSala { get; private set; }
+    public static bool isSinglePlayer { get; private set; }
+    public static string playerNumber { get; private set; }
+    
     // NOU: Flag per saber si som el Host (el que crea la sala)
     public static bool isHost;
 
@@ -92,8 +99,6 @@ public class MainMenuManager : MonoBehaviour
     // Botó: Jugar Sol (Single Player)
     public void JugarSol()
     {
-        // Guardar mode individual
-        PlayerPrefs.SetInt("EsModeIndividual", 1);
         StartCoroutine(CrearPartidaSinglePlayer());
     }
 
