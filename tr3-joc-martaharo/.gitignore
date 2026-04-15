@@ -29,6 +29,11 @@
 !*.unity
 !*.asset
 
+# --- Forzar configuración de escenas y proyecto ---
+!/ProjectSettings/EditorBuildSettings.asset
+!/ProjectSettings/TagManager.asset
+!/ProjectSettings/ProjectSettings.asset
+
 # --- Sistema operatiu ---
 .DS_Store
 Thumbs.db
