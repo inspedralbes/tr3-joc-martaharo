@@ -106,26 +106,23 @@ public class BirdAgentIA : Agent
         sensor.AddObservation(rb.linearVelocity.x);
     }
 
-    public override void OnActionReceived(ActionBuffers actions)
-    {
-        stepCount++;
+  public override void OnActionReceived(ActionBuffers actions)
+{
+    stepCount++;
+    if (stepCount >= maxSteps) { AddReward(-1f); EndEpisode(); return; }
 
-        if (stepCount >= maxSteps)
-        {
-            AddReward(-1f);
-            EndEpisode();
-            return;
-        }
+    // Useu dues branques (necessitaràs canviar el "Discrete Branches" a 2 a l'Inspector)
+    int moveY = actions.DiscreteActions[0]; // 0: quiet, 1: amunt, 2: avall
+    int moveX = actions.DiscreteActions[1]; // 0: quiet, 1: endavant
 
-        int action = actions.DiscreteActions[0];
+    float vSpeed = (moveY == 1 ? 5f : (moveY == 2 ? -5f : 0f));
+    float hSpeed = (moveX == 1 ? 3f : 0f); // Ara ell decideix quan avançar
 
-        if (rb != null)
-        {
-            float verticalMove = (action == 1 ? 5f : (action == 2 ? -5f : 0f));
-            rb.linearVelocity = new Vector2(5f, verticalMove);
-        }
-    }
-
+    rb.linearVelocity = new Vector2(hSpeed, vSpeed);
+    
+    // Premi petit per estar viu i no xocar (ajuda a que no es quedi quiet)
+    AddReward(0.001f);
+}
 public override void Heuristic(in ActionBuffers actionsOut)
 {
     var discreteActions = actionsOut.DiscreteActions;
