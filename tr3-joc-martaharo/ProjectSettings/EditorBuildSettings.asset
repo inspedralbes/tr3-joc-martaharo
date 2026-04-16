@@ -17,6 +17,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Project/Scenes/Joc.unity
     guid: 19e94433a57933a39acfdd2249c06449
+  - enabled: 1
+    path: Assets/_Project/Scenes/Joc_IA.unity
+    guid: 92cec0b96fbe2372f80892e1d9106809
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0

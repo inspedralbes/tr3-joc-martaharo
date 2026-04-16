@@ -33,10 +33,10 @@ public class MainMenuManager : MonoBehaviour
     public Label labelError;
 
     // Variables estátiques per passar dades entre escenes
-    public static string roomId { get; private set; }
-    public static string roomCode { get; private set; }
+    public static string roomId { get; set; }
+    public static string roomCode { get; set; }
     public static string nomSala { get; private set; }
-    public static bool isSinglePlayer { get; private set; }
+    public static bool isSinglePlayer { get; set; }
     public static string playerNumber { get; private set; }
     
     // NOU: Flag per saber si som el Host (el que crea la sala)
@@ -96,45 +96,16 @@ public class MainMenuManager : MonoBehaviour
         panellUnirSala.SetActive(false);
     }
 
-    // Botó: Jugar Sol (Single Player)
+    // Botó: Jugar Sol (Single Player) - Mode Individual Offline
     public void JugarSol()
     {
-        StartCoroutine(CrearPartidaSinglePlayer());
-    }
-
-    IEnumerator CrearPartidaSinglePlayer()
-    {
         isSinglePlayer = true;
-        
-        using (UnityWebRequest www = new UnityWebRequest(urlServidor + "/api/rooms/single", "POST"))
-        {
-            www.downloadHandler = new DownloadHandlerBuffer();
-            www.SetRequestHeader("Authorization", "Bearer " + AuthManager.token);
-
-            yield return www.SendWebRequest();
-
-            if (www.result == UnityWebRequest.Result.Success)
-            {
-                string resposta = www.downloadHandler.text;
-                SinglePlayerRoomResponse dades = JsonUtility.FromJson<SinglePlayerRoomResponse>(resposta);
-
-                roomId = dades.roomId;
-                roomCode = dades.roomCode;
-                nomSala = dades.room.nom_sala;
-
-                Debug.Log("Partida Single Player creada: " + roomCode);
-                
-                // Carregar escena de joc directament
-                SceneManager.LoadScene("Joc");
-            }
-            else
-            {
-                Debug.LogError("Error creant partida single player: " + www.error);
-                missatgeCrear.text = "Error al crear la partida. Torna a intentar.";
-                missatgeCrear.color = Color.red;
-            }
-        }
+        roomId = "";
+        roomCode = "";
+        SceneManager.LoadScene("Joc_IA");
     }
+
+    // Mode Individual Offline - No cal crear sala al servidor
 
     // Botó: Crear Sala Multiplayer
     public void CrearSalaMultiplayer()
