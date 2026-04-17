@@ -106,39 +106,37 @@ public class BirdAgentIA : Agent
         sensor.AddObservation(rb.linearVelocity.x);
     }
 
-  public override void OnActionReceived(ActionBuffers actions)
+public override void OnActionReceived(ActionBuffers actions)
 {
     stepCount++;
     if (stepCount >= maxSteps) { AddReward(-1f); EndEpisode(); return; }
 
-    // Useu dues branques (necessitaràs canviar el "Discrete Branches" a 2 a l'Inspector)
+    // Branca 0: Vertical | Branca 1: Horitzontal
     int moveY = actions.DiscreteActions[0]; // 0: quiet, 1: amunt, 2: avall
-    int moveX = actions.DiscreteActions[1]; // 0: quiet, 1: endavant
+    int moveX = actions.DiscreteActions[1]; // 0: quiet, 1: dreta, 2: esquerra
 
-    float vSpeed = (moveY == 1 ? 5f : (moveY == 2 ? -5f : 0f));
-    float hSpeed = (moveX == 1 ? 3f : 0f); // Ara ell decideix quan avançar
+    float vSpeed = (moveY == 1 ? verticalSpeed : (moveY == 2 ? -verticalSpeed : 0f));
+    float hSpeed = (moveX == 1 ? moveSpeed : (moveX == 2 ? -moveSpeed : 0f)); 
 
     rb.linearVelocity = new Vector2(hSpeed, vSpeed);
     
-    // Premi petit per estar viu i no xocar (ajuda a que no es quedi quiet)
-    AddReward(0.001f);
+    // Penalització per temps (molt petita) perquè no s'adormi al sostre
+    AddReward(-0.001f);
 }
 public override void Heuristic(in ActionBuffers actionsOut)
 {
     var discreteActions = actionsOut.DiscreteActions;
-    // Netegem l'acció per defecte
-    discreteActions[0] = 0;
+    discreteActions[0] = 0; // Vertical
+    discreteActions[1] = 0; // Horitzontal
 
-    if (Input.GetKey(KeyCode.W)) {
-        discreteActions[0] = 1;
-        Debug.Log("Tecla W detectada -> Acció 1");
-    }
-    else if (Input.GetKey(KeyCode.S)) {
-        discreteActions[0] = 2;
-        Debug.Log("Tecla S detectada -> Acció 2");
-    }
+    // W / S per amunt i avall
+    if (Input.GetKey(KeyCode.W)) discreteActions[0] = 1;
+    else if (Input.GetKey(KeyCode.S)) discreteActions[0] = 2;
+
+    // D / A per dreta i esquerra
+    if (Input.GetKey(KeyCode.D)) discreteActions[1] = 1;
+    else if (Input.GetKey(KeyCode.A)) discreteActions[1] = 2;
 }
-
     private void OnTriggerEnter2D(Collider2D other)
     {
         Debug.Log("IA colisiona amb: " + other.tag);
@@ -148,21 +146,21 @@ public override void Heuristic(in ActionBuffers actionsOut)
             AddReward(2f);
             EndEpisode();
         }
-        else if (other.CompareTag("Enemy") || other.CompareTag("Pared") || other.CompareTag("Paret"))
+        else if (other.CompareTag("Enemy") || other.CompareTag("Paret") || other.CompareTag("Paret"))
         {
             AddReward(-1f);
             EndEpisode();
         }
     }
-
-    private void OnCollisionEnter2D(Collision2D collision)
+private void OnCollisionEnter2D(Collision2D collision)
+{
+    // Si xoca amb l'enemic O amb qualsevol paret/sostre
+    if (collision.gameObject.CompareTag("Enemy") || collision.gameObject.CompareTag("Paret") || collision.gameObject.CompareTag("Paret"))
     {
-        if (collision.gameObject.CompareTag("Enemy"))
-        {
-            AddReward(-1f);
-            EndEpisode();
-        }
+        AddReward(-1f);
+        EndEpisode();
     }
+}
 
     public void Respawn()
     {
