@@ -1,6 +1,10 @@
 # <h1 align="center">🎮 TR3 - Joc Multiplayer Marta Haro</h1>
 
 <p align="center">
+  <img src="BIRDSPRITESHEET_Blue.gif" alt="Bird Blue Animation" width="150">
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/STATUS-EN%20DESENVOLUPAMENT-green?style=for-the-badge" alt="Status Badge">
   <img src="https://img.shields.io/badge/PLATAFORMA-PC%20/%20WEB-blue?style=for-the-badge" alt="Platform Badge">
   <img src="https://img.shields.io/badge/ENGINE-UNITY%206-black?style=for-the-badge&logo=unity" alt="Unity Badge">
@@ -27,11 +31,6 @@
 * **Marta Haro**
 
 ## 🎮 Descripció del Projecte
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/inspedralbes/tr3-joc-martaharo/main/Assets/Bird_Blue_Idle.gif" alt="Bird Blue Idle Gif" width="100">
-</p>
-
 El joc se centra en la cooperació sincrònica i la supervivència. Utilitza una arquitectura híbrida on **Unity 6** gestiona el gameplay i la renderització, mentre que un servidor **Node.js** amb **Socket.io** i **MongoDB** s'encarrega de l'autenticació, la gestió de sales privades i el rànquing.
 
 **Característiques clau:**
