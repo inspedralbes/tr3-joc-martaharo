@@ -149,7 +149,7 @@ public class PlayerControllerLocal : MonoBehaviour
             }
             else if (GameManagerIA.Instance != null)
             {
-                GameManagerIA.Instance.Victory();
+                GameManagerIA.Instance.Victory("Jugador");
             }
         }
     }

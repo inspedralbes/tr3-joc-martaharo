@@ -145,6 +145,8 @@ public override void Heuristic(in ActionBuffers actionsOut)
         {
             AddReward(2f);
             EndEpisode();
+            if (GameManagerIA.Instance != null)
+                GameManagerIA.Instance.Victory("IA");
         }
         else if (other.CompareTag("Enemy") || other.CompareTag("Paret") || other.CompareTag("Paret"))
         {
