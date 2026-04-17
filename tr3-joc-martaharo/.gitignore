@@ -1,0 +1,54 @@
+# --- Carpetes temporals i de sistema de Unity (NO es pugen) ---
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Mm]emoryCaptures/
+/[Aa]ssets/AssetStoreTools*
+
+# --- Fitxers de configuració de Visual Studio / IDEs ---
+*.csproj
+*.sln
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+.vs/
+
+# --- Seguretat i Configuració (Molt important NO pujar) ---
+.env
+.env.*
+
+# --- FORZAR LA SUBIDA DE ASSETS (MUY IMPORTANTE) ---
+!*.meta
+!*.prefab
+!*.controller
+!*.anim
+!*.unity
+!*.asset
+
+# --- Forzar configuración de escenas y proyecto ---
+!/ProjectSettings/EditorBuildSettings.asset
+!/ProjectSettings/TagManager.asset
+!/ProjectSettings/ProjectSettings.asset
+
+# --- Sistema operatiu ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# --- Bloqueig de brossa del Servidor i Node ---
+**/node_modules/
+**/dist/
+**/.env
+**/.env.*
+
+# --- Fix per a la carpeta Packages ---
+/[Pp]ackages/*
+!/[Pp]ackages/manifest.json
+!/[Pp]ackages/packages-lock.json
+
+# --- Unity ocults ---
+.collabignore

@@ -1,0 +1,48 @@
+/* Contenidor principal amb fons totalment opac */
+.panel-final {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: black;
+    align-items: center;
+    justify-content: center;
+    border-color: #00FFFF;
+    border-width: 4px;
+    border-radius: 0px;
+}
+
+/* Títol i textos */
+.titol {
+    font-size: 60px;
+    color: #FFFFFF;
+    -unity-font-style: bold;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px #FF0000; /* Ombra vermella per perill */
+}
+
+.estadistica {
+    font-size: 30px;
+    color: #00FFFF; /* Cian per coherència */
+    margin-bottom: 10px;
+}
+
+/* Botons amb l'estètica que ja utilitzes */
+.boto-pixel {
+    width: 250px;
+    height: 60px;
+    background-color: #222222;
+    color: white;
+    border-color: #00FFFF;
+    border-width: 3px;
+    margin-top: 20px;
+    font-size: 24px;
+    transition-duration: 0.1s;
+}
+
+.boto-pixel:hover {
+    background-color: #00FFFF;
+    color: #000000;
+    scale: 1.1; /* Efecte que ja fas servir al Lobby  */
+}

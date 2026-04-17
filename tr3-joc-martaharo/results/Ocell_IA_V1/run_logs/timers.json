@@ -1,0 +1,42 @@
+{
+    "name": "root",
+    "metadata": {
+        "timer_format_version": "0.1.0",
+        "start_time_seconds": "1776353767",
+        "python_version": "3.10.12 (main, Aug 16 2023, 05:44:31) [GCC 10.2.1 20210110]",
+        "command_line_arguments": "/usr/local/bin/mlagents-learn /workspace/ocell.yaml --run-id=Ocell_IA_V1",
+        "mlagents_version": "1.1.0",
+        "mlagents_envs_version": "1.1.0",
+        "communication_protocol_version": "1.5.0",
+        "pytorch_version": "2.11.0+cu130",
+        "numpy_version": "1.23.5",
+        "end_time_seconds": "1776353825"
+    },
+    "total": 60.98271625799998,
+    "count": 1,
+    "self": 0.04524996500003908,
+    "children": {
+        "run_training.setup": {
+            "total": 0.4928468509999675,
+            "count": 1,
+            "self": 0.4928468509999675
+        },
+        "TrainerController.start_learning": {
+            "total": 60.444619441999976,
+            "count": 1,
+            "self": 0.12010767300012049,
+            "children": {
+                "TrainerController._reset_env": {
+                    "total": 60.324445997999874,
+                    "count": 1,
+                    "self": 60.324445997999874
+                },
+                "TrainerController._save_models": {
+                    "total": 6.577099998139602e-05,
+                    "count": 1,
+                    "self": 6.577099998139602e-05
+                }
+            }
+        }
+    }
+}
