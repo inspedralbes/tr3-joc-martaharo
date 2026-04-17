@@ -1,7 +1,7 @@
 # <h1 align="center">🎮 TR3 - Joc Multiplayer Marta Haro</h1>
 
 <p align="center">
-  <img src="BIRDSPRITESHEET_Blue.gif" alt="Bird Blue Animation" width="150">
+  <img src="BIRDSPRITESHEET_Blue.gif" alt="Blue Bird Animation" width="180">
 </p>
 
 <p align="center">
@@ -12,18 +12,8 @@
 
 <p align="center">
   <strong>Projecte DAM (Desenvolupament d'Aplicacions Multiplataforma)</strong><br>
-  Un joc cooperatiu 2D Pixel Art on dos jugadors han de col·laborar en temps real per escapar d'un enemic IA i arribar a una zona de sortida junts.
+  Un joc cooperatiu 2D en línia on la col·laboració és la clau per a la supervivència.
 </p>
-
----
-
-## 📌 Índex
-* [Descripció del Projecte](#-descripció-del-projecte)
-* [Estat del Projecte](#-estat-del-projecte)
-* [Enllaços d'Interès](#-enllaços-dinterès)
-* [Estructura del Repositori](#-estructura-del-repositori)
-* [Tecnologies Utilitzades](#-tecnologies-utilitzades)
-* [Autors](#-autors)
 
 ---
 
@@ -31,38 +21,37 @@
 * **Marta Haro**
 
 ## 🎮 Descripció del Projecte
-El joc se centra en la cooperació sincrònica i la supervivència. Utilitza una arquitectura híbrida on **Unity 6** gestiona el gameplay i la renderització, mentre que un servidor **Node.js** amb **Socket.io** i **MongoDB** s'encarrega de l'autenticació, la gestió de sales privades i el rànquing.
-
-**Característiques clau:**
-* **Moviment Fluid:** Implementació de `ClientNetworkTransform` per eliminar el lag visual.
-* **Seguretat:** Autenticació amb JWT i xifrat de dades.
-* **Cooperació:** Sistema de meta on ambdós jugadors han de ser presents per guanyar.
+Aquest és un joc cooperatiu 2D amb estètica Pixel Art dissenyat per a dos jugadors. L'objectiu principal és col·laborar en temps real per esquivar els enemics controlats per la IA i arribar conjuntament a la zona de meta. El projecte integra un client desenvolupat en **Unity** i un servidor robust en **Node.js**.
 
 ---
 
 ## 🚀 Estat del Projecte
 Actualment, el projecte es troba en una fase avançada de desenvolupament:
-
-* ✅ **Autenticació:** Operativa amb validació JWT i persistència en MongoDB.
-* ✅ **Sales/Lobby:** Operativa amb Socket.io i codis aleatoris de 5 caràcters.
-* ✅ **Moviment Multijugador:** Operatiu amb Unity Netcode (Autoritat del Client).
-* ✅ **Resolució de Problemes:** Sistema de reintents de càmera i alliberament de ports implementats.
-* 🚧 **IA Enemiga:** En procés de millora de la sincronització en xarxa.
+* ✅ **Autenticació:** Sistema de login i registre totalment operatiu.
+* ✅ **Sales/Lobby:** Gestió de partides mitjançant Socket.io.
+* ✅ **Sincronització:** Moviment multijugador implementat amb Netcode (Client Authority).
+* ✅ **Estabilitat:** Sistemes de reintents de càmera i gestió de ports optimitzats.
 
 ---
 
-## 🔗 Enllaços d'Interès
+## 🔗 Enllaços d'interès
 | Recurs | Enllaç |
 | :--- | :--- |
-| **Gestor de Tasques (Jira)** | [🌐 Tauler del Projecte](https://jocmultijugador.atlassian.net/jira/software/projects/JOC/boards/2/backlog?selectedIssue=JOC-7) |
-| **Prototip Gràfic (Figma)** | [🎨 Veure Disseny](#) |
-| **URL de Producció** | 🚀 *Pendent de desplegament* |
+| **Gestor de tasques (Jira)** | [🌐 Tauler del Projecte](https://jocmultijugador.atlassian.net/jira/software/projects/JOC/boards/2/backlog?selectedIssue=JOC-7) |
+| **Prototip gràfic** | [🎨 Enllaç a Figma/Penpot](#) |
+| **URL de producció** | 🚀 *(Pendent de desplegament)* |
 
 ---
 
 ## 📁 Estructura del Repositori
-* **`/Assets`**: Projecte Unity. Inclou scripts de moviment, `NetworkAnimator` i gestió de col·lisions.
-* **`/server`**: Backend Node.js. Lògica de rutes API per a rànquings i servidor de WebSockets.
+El projecte segueix una arquitectura modular per separar la lògica del joc del backend:
+
+* **`/Assets`**: Projecte complet d'Unity (Scripts de C#, prefabs i assets gràfics).
+    * `Scripts/`: Lògica de control, xarxa i gestió de la interfície.
+* **`/server`**: Backend desenvolupat en Node.js.
+    * `controllers/`: Gestió de les rutes i peticions HTTP.
+    * `services/`: Lògica de negoci.
+    * `repositories/`: Capa d'accés a dades.
 * **`/openspec`**: Documentació tècnica detallada i especificacions del sistema.
 
 ---
@@ -74,7 +63,6 @@ Actualment, el projecte es troba en una fase avançada de desenvolupament:
 
 ---
 
-## 👥 Autors
-| [<img src="https://github.com/identicons/m.png" width=115><br><sub>**Marta Haro**</sub>](https://github.com/teu-usuari-github) |
-| :---: |
-| Desenvolupadora Full-stack |
+## 👤 Autoria
+* **Marta Haro** - *Desenvolupament Full-stack*
+* [GitHub Profile](https://github.com/inspedralbes/tr3-joc-martaharo)
