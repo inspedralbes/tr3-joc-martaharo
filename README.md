@@ -1,93 +1,83 @@
-# \<h1 align="center"\>🎮 TR3 - Joc Multiplayer Marta Haro\</h1\>
+# <h1 align="center">🎮 TR3 - Joc Multiplayer Marta Haro</h1>
 
-\<p align="center"\>
-\<img src="[https://img.shields.io/badge/STATUS-EN%20DESENVOLUPAMENT-green?style=for-the-badge](https://www.google.com/search?q=https://img.shields.io/badge/STATUS-EN%2520DESENVOLUPAMENT-green%3Fstyle%3Dfor-the-badge)" alt="Status Badge"\>
-\<img src="[https://img.shields.io/badge/PLATAFORMA-PC%20/%20WEB-blue?style=for-the-badge](https://www.google.com/search?q=https://img.shields.io/badge/PLATAFORMA-PC%2520/%2520WEB-blue%3Fstyle%3Dfor-the-badge)" alt="Platform Badge"\>
-\<img src="[https://img.shields.io/badge/ENGINE-UNITY%206-black?style=for-the-badge\&logo=unity](https://www.google.com/search?q=https://img.shields.io/badge/ENGINE-UNITY%25206-black%3Fstyle%3Dfor-the-badge%26logo%3Dunity)" alt="Unity Badge"\>
-\</p\>
+<p align="center">
+  <img src="https://img.shields.io/badge/STATUS-EN%20DESENVOLUPAMENT-green?style=for-the-badge" alt="Status Badge">
+  <img src="https://img.shields.io/badge/PLATAFORMA-PC%20/%20WEB-blue?style=for-the-badge" alt="Platform Badge">
+  <img src="https://img.shields.io/badge/ENGINE-UNITY%206-black?style=for-the-badge&logo=unity" alt="Unity Badge">
+</p>
 
-\<p align="center"\>
-\<strong\>Projecte DAM (Desenvolupament d'Aplicacions Multiplataforma)\</strong\><br>
-Un joc cooperatiu 2D Pixel Art on la col·laboració sincrònica és la clau per esquivar l'enemic IA i assolir la victòria.
-\</p\>
+<p align="center">
+  <strong>Projecte DAM (Desenvolupament d'Aplicacions Multiplataforma)</strong><br>
+  Un joc cooperatiu 2D Pixel Art on dos jugadors han de col·laborar en temps real per escapar d'un enemic IA i arribar a una zona de sortida junts.
+</p>
 
------
+---
 
 ## 📌 Índex
+* [Descripció del Projecte](#-descripció-del-projecte)
+* [Estat del Projecte](#-estat-del-projecte)
+* [Enllaços d'Interès](#-enllaços-dinterès)
+* [Estructura del Repositori](#-estructura-del-repositori)
+* [Tecnologies Utilitzades](#-tecnologies-utilitzades)
+* [Autors](#-autors)
 
-  * [Descripció del Projecte](https://www.google.com/search?q=%23-descripci%C3%B3-del-projecte)
-  * [Estat del Projecte](https://www.google.com/search?q=%23-estat-del-projecte)
-  * [Enllaços d'Interès](https://www.google.com/search?q=%23-enlla%C3%A7os-dinter%C3%A8s)
-  * [Estructura del Repositori](https://www.google.com/search?q=%23-estructura-del-repositori)
-  * [Tecnologies Utilitzades](https://www.google.com/search?q=%23-tecnologies-utilitzades)
-  * [Autors](https://www.google.com/search?q=%23-autors)
+---
 
------
+## 👥 Integrants
+* **Marta Haro**
 
 ## 🎮 Descripció del Projecte
+El joc se centra en la cooperació sincrònica i la supervivència. Utilitza una arquitectura híbrida on **Unity 6** gestiona el gameplay i la renderització, mentre que un servidor **Node.js** amb **Socket.io** i **MongoDB** s'encarrega de l'autenticació, la gestió de sales privades i el ranking.
 
-Aquest projecte neix de la necessitat de crear una experiència multijugador fluida i cooperativa. Dos jugadors han de coordinar els seus moviments en un entorn 2D per superar obstacles i una IA enemiga que els persegueix.
+**Característiques clau:**
+* **Moviment Fluid:** Implementació de `ClientNetworkTransform` per eliminar el lag visual.
+* **Seguretat:** Autenticació amb JWT i xifrat de dades.
+* **Cooperació:** Sistema de meta on ambdós jugadors han de ser presents per guanyar.
 
-**Característiques principals:**
-
-  * **Cooperació real:** Ambdós jugadors han d'arribar vius a la zona de meta.
-  * **Arquitectura Híbrida:** Client potent en Unity i Backend lleuger en Node.js.
-  * **Sincronització:** Ús de WebSockets per a dades en temps real.
-
------
+---
 
 ## 🚀 Estat del Projecte
+Actualment, el projecte es troba en una fase avançada de desenvolupament:
 
-El projecte es troba actualment en fase de **Beta Tècnica**.
+* ✅ **Autenticació:** Operativa amb validació JWT i persistència en MongoDB.
+* ✅ **Sales/Lobby:** Operativa amb Socket.io i codis aleatoris de 5 caràcters.
+* ✅ **Moviment Multijugador:** Operatiu amb Unity Netcode (Autoritat del Client).
+* ✅ **Resolució de Problemes:** Sistema de reintents de càmera i alliberament de ports implementats.
+* 🚧 **IA Enemiga:** En procés de millora de la sincronització en xarxa.
 
-  * ✅ **Autenticació:** Registre/Login amb JWT i persistència en MongoDB.
-  * ✅ **Sales/Lobby:** Sistema de matchmaking mitjançant codis de sala.
-  * ✅ **Gameplay:** Moviment sincronitzat amb *Client Authority* (Netcode).
-  * 🚧 **IA Enemiga:** En fase d'ajust de comportament i sincronització de xarxa.
-  * 📅 **Proper pas:** Implementació del sistema de rànquings globals.
-
------
+---
 
 ## 🔗 Enllaços d'Interès
-
 | Recurs | Enllaç |
 | :--- | :--- |
-| **Gestor de Tasques (Jira)** | [🌐 Accedir al Tauler](https://jocmultijugador.atlassian.net/jira/software/projects/JOC/boards/2/backlog?selectedIssue=JOC-7) |
-| **Prototip Gràfic (Figma)** | [🎨 Veure Disseny](https://www.google.com/search?q=%23) |
-| **URL de Producció** | 🚀 *Properament* |
+| **Gestor de Tasques (Jira)** | [🌐 Tauler del Projecte](https://jocmultijugador.atlassian.net/jira/software/projects/JOC/boards/2/backlog?selectedIssue=JOC-7) |
+| **Prototip Gràfic (Figma)** | [🎨 Veure Disseny](#) |
+| **URL de Producció** | 🚀 *Pendent de desplegament* |
 
------
+---
 
 ## 📁 Estructura del Repositori
+*Obligatori seguir aquesta estructura:*
 
-L'estructura segueix l'esquema mínim obligatori de Transversals:
+* **`/Assets`**: Projecte Unity. Inclou scripts de moviment, `NetworkAnimator` i gestió de col·lisions.
+* **`/server`**: Backend Node.js. Lògica de rutes API per a rànquings i servidor de WebSockets.
+* **`/openspec`**: Documentació tècnica detallada i especificacions del sistema.
 
-  * **`/Assets`**: Tot el contingut d'Unity (Prefabs, Sprites, i Scripts de Chttps://www.google.com/search?q=%23).
-  * **`/server`**: API Rest i Servidor de WebSockets (Node.js).
-  * **`/openspec`**: Documentació tècnica, diagrames de base de dades i protocols.
-
------
+---
 
 ## 🛠️ Tecnologies Utilitzades
+<div align="center">
+  <img src="https://github-readme-tech-stack.vercel.app/api/cards?title=Tech%20Stack&lineCount=2&theme=dark&line1=unity,unity,auto;csharp,csharp,auto;&line2=nodejs,nodejs,auto;mongodb,mongodb,auto;socketio,socketio,auto;" alt="Marta Haro Tech Stack" />
+</div>
 
-\<p align="left"\>
-\<img src="[https://img.shields.io/badge/Unity-black?style=flat-square\&logo=unity\&logoColor=white](https://www.google.com/search?q=https://img.shields.io/badge/Unity-black%3Fstyle%3Dflat-square%26logo%3Dunity%26logoColor%3Dwhite)" alt="Unity"\>
-\<img src="[https://img.shields.io/badge/C%23-239120?style=flat-square\&logo=c-sharp\&logoColor=white](https://www.google.com/search?q=https://img.shields.io/badge/C%2523-239120%3Fstyle%3Dflat-square%26logo%3Dc-sharp%26logoColor%3Dwhite)" alt="Chttps://www.google.com/search?q=%23"\>
-\<img src="[https://img.shields.io/badge/Node.js-339933?style=flat-square\&logo=node.js\&logoColor=white](https://www.google.com/search?q=https://img.shields.io/badge/Node.js-339933%3Fstyle%3Dflat-square%26logo%3Dnode.js%26logoColor%3Dwhite)" alt="Node.js"\>
-\<img src="[https://img.shields.io/badge/MongoDB-47A248?style=flat-square\&logo=mongodb\&logoColor=white](https://www.google.com/search?q=https://img.shields.io/badge/MongoDB-47A248%3Fstyle%3Dflat-square%26logo%3Dmongodb%26logoColor%3Dwhite)" alt="MongoDB"\>
-\<img src="[https://img.shields.io/badge/Socket.io-010101?style=flat-square\&logo=socket.io\&logoColor=white](https://www.google.com/search?q=https://img.shields.io/badge/Socket.io-010101%3Fstyle%3Dflat-square%26logo%3Dsocket.io%26logoColor%3Dwhite)" alt="Socket.io"\>
-\</p\>
-
------
+---
 
 ## 👥 Autors
-
-| [\<img src="https://github.com/identicons/m.png" width=115\><br>\<sub\>**Marta Haro**\</sub\>](https://www.google.com/search?q=https://github.com/teu-usuari-github) |
+| [<img src="https://github.com/identicons/m.png" width=115><br><sub>**Marta Haro**</sub>](https://github.com/teu-usuari-github) |
 | :---: |
 | Desenvolupadora Full-stack |
 
------
-
-\<p align="center"\>
-Darrer cop actualitzat: Abril 2026
-\</p\>
+---
+<p align="center">
+  <em>Aquest README compleix amb l'esquema mínim obligatori de carpetes per als projectes transversals.</em>
+</p>
