@@ -27,7 +27,12 @@
 * **Marta Haro**
 
 ## 🎮 Descripció del Projecte
-El joc se centra en la cooperació sincrònica i la supervivència. Utilitza una arquitectura híbrida on **Unity 6** gestiona el gameplay i la renderització, mentre que un servidor **Node.js** amb **Socket.io** i **MongoDB** s'encarrega de l'autenticació, la gestió de sales privades i el ranking.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/inspedralbes/tr3-joc-martaharo/main/Assets/Bird_Blue_Idle.gif" alt="Bird Blue Idle Gif" width="100">
+</p>
+
+El joc se centra en la cooperació sincrònica i la supervivència. Utilitza una arquitectura híbrida on **Unity 6** gestiona el gameplay i la renderització, mentre que un servidor **Node.js** amb **Socket.io** i **MongoDB** s'encarrega de l'autenticació, la gestió de sales privades i el rànquing.
 
 **Característiques clau:**
 * **Moviment Fluid:** Implementació de `ClientNetworkTransform` per eliminar el lag visual.
@@ -57,8 +62,6 @@ Actualment, el projecte es troba en una fase avançada de desenvolupament:
 ---
 
 ## 📁 Estructura del Repositori
-*Obligatori seguir aquesta estructura:*
-
 * **`/Assets`**: Projecte Unity. Inclou scripts de moviment, `NetworkAnimator` i gestió de col·lisions.
 * **`/server`**: Backend Node.js. Lògica de rutes API per a rànquings i servidor de WebSockets.
 * **`/openspec`**: Documentació tècnica detallada i especificacions del sistema.
@@ -76,8 +79,3 @@ Actualment, el projecte es troba en una fase avançada de desenvolupament:
 | [<img src="https://github.com/identicons/m.png" width=115><br><sub>**Marta Haro**</sub>](https://github.com/teu-usuari-github) |
 | :---: |
 | Desenvolupadora Full-stack |
-
----
-<p align="center">
-  <em>Aquest README compleix amb l'esquema mínim obligatori de carpetes per als projectes transversals.</em>
-</p>
