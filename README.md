@@ -12,7 +12,7 @@
 
 <p align="center">
   <strong>Projecte DAM (Desenvolupament d'Aplicacions Multiplataforma)</strong><br>
-  Un joc cooperatiu 2D en línia on la col·laboració és la clau per a la supervivència.
+  Un joc cooperatiu 2D en línia on la col·laboració és la klau per a la supervivència.
 </p>
 
 ---
@@ -36,21 +36,21 @@ Actualment, el projecte es troba en una fase avançada de desenvolupament:
 
 ## 📊 Diagrames del Sistema
 
-### 👤 Casos d'Ús
-Defineix les interaccions dels jugadors amb el sistema (Login, Creació de Sala, Joc).
-![Diagrama de Casos d'Ús](docs/casos_us.png)
+### 👤 Casos d’ús
+Defineix les interaccions dels jugadors amb el sistema.
+![Diagrama de Casos d'Ús](docs/Captura%20de%20pantalla%20de%202026-04-17%2009-17-10.png)
 
-### 🔄 Seqüència: Reserva i Compra (Socket.IO)
-Flux de dades en temps real per a la gestió de sessions i reserves mitjançant WebSockets.
-![Diagrama de Seqüència](docs/sequencia_socket.png)
+### 🔄 Seqüència del procés de reserva i compra (amb Socket.IO)
+Flux de dades en temps real per a la gestió de sessions i reserves.
+![Diagrama de Seqüència](docs/Captura%20de%20pantalla%20de%202026-04-17%2009-17-49.png)
 
-### 🗄️ Entitat-Relació
-Estructura de la base de dades (usuaris, partides, estadístiques).
-![Diagrama Entitat-Relació](docs/entitat_relacio.png)
+### 🗄️ Entitat-relació
+Estructura de la base de dades (usuaris, partides i estadístiques).
+![Diagrama Entitat-Relació](docs/Captura%20de%20pantalla%20de%202026-04-17%2009-18-35.png)
 
-### 🏗️ Arquitectura de Microserveis
-Organització modular del backend i la seva comunicació amb el client Unity.
-![Diagrama de Microserveis](docs/microserveis.png)
+### 🏗️ Microserveis
+Organització modular del backend i la seva comunicació amb el client.
+![Diagrama de Microserveis](docs/Captura%20de%20pantalla%20de%202026-04-17%2009-18-59.png)
 
 ---
 
