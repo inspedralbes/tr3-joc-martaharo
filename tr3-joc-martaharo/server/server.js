@@ -6,6 +6,9 @@ const http = require('http');
 const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 
+// Importar models correctament al principi
+const Sala = require('./Room');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const MONGO_URL = process.env.MONGO_URL;
@@ -14,20 +17,20 @@ const MONGO_URL = process.env.MONGO_URL;
 async function connectToMongoDB(retries = 5, delay = 3000) {
   for (let i = 0; i < retries; i++) {
     try {
-      console.log(`[MONGO] Intentant connexió a: ${MONGO_URL}`);
+      console.log(\`[MONGO] Intentant connexió a: \${MONGO_URL}\`);
       await mongoose.connect(MONGO_URL);
       console.log('Connectat a la base de dades joc_multijugador ✅');
       await initializeDatabase();
       return;
     } catch (err) {
-      console.error(`[MONGO] Error a l'intent ${i + 1}:`, err.message);
+      console.error(\`[MONGO] Error a l'intent \${i + 1}:\`, err.message);
       if (i < retries - 1) {
-        console.log(`[MONGO] Reintentant en ${delay / 1000} segons...`);
+        console.log(\`[MONGO] Reintentant en \${delay / 1000} segons...\`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   }
-  console.error('[MONGO] Error permanent: No s\'ha pogut connectar a MongoDB');
+  console.error('[MONGO] Error permanent: No s\\'ha pogut connectar a MongoDB');
 }
 
 // Iniciar connexió
@@ -119,7 +122,7 @@ io.on('connection', (socket) => {
     }
 
     roomPositions[roomId][playerId] = { x: 0, y: 0, name: playerName, playerNumber: playerNumber };
-    console.log(`[CONNEXIÓ] ${playerName} s'ha unit a la Sala ${roomId} com ${playerNumber}`);
+    console.log(\`[CONNEXIÓ] \${playerName} s'ha unit a la Sala \${roomId} com \${playerNumber}\`);
 
     // Notificar a tots els jugadors de la sala (inclòs el propi) amb updateLobby
     const playersList = roomPlayers[roomId].map(p => ({ name: p.name, playerNumber: p.playerNumber }));
@@ -143,7 +146,7 @@ io.on('connection', (socket) => {
       roomEnemyPositions[roomId] = { x: 0, y: 0 };
     }
 
-    console.log(`[ENEMIC] Enemic registrat a la sala ${roomId}`);
+    console.log(\`[ENEMIC] Enemic registrat a la sala \${roomId}\`);
   });
 
   // Quan l'host actualitza la posició de l'enemic
@@ -161,7 +164,7 @@ io.on('connection', (socket) => {
       y: y
     });
 
-    //console.log(`[ENEMIC] Posició sincronitzada: (${x}, ${y}) a la sala ${roomId}`);
+    //console.log(\`[ENEMIC] Posició sincronitzada: (\${x}, \${y}) a la sala \${roomId}\`);
   });
 
   // Quan un jugador actualitza la seva posició
@@ -180,7 +183,7 @@ io.on('connection', (socket) => {
       y: y
     });
 
-    //console.log(`Posició rebuda de ${playerId}: (${x}, ${y}) a la sala ${roomId}`);
+    //console.log(\`Posició rebuda de \${playerId}: (\${x}, \${y}) a la sala \${roomId}\`);
   });
 
   // Quan un jugador guanya la partida
@@ -204,7 +207,7 @@ io.on('connection', (socket) => {
       winnerName: winnerName
     });
 
-    console.log(`[VICTÒRIA] El jugador ${winnerName} ha guanyat a la sala ${roomId}`);
+    console.log(\`[VICTÒRIA] El jugador \${winnerName} ha guanyat a la sala \${roomId}\`);
   });
 
   // Quan un jugador és atrapat per l'enemic (multijugador)
@@ -221,16 +224,16 @@ io.on('connection', (socket) => {
       playerId: playerId
     });
 
-    console.log(`[ENEMIC] El jugador ${playerId} ha estat atrapat a la sala ${roomId}`);
+    console.log(\`[ENEMIC] El jugador \${playerId} ha estat atrapat a la sala \${roomId}\`);
   });
 
-  // Quan el host clica "Començar" - inicia la partida
+  // Quan el host clica \"Començar\" - inicia la partida
   socket.on('startGame', (data) => {
     const { roomId } = data;
 
     // Verificar que som el host
     if (hostPlayer[roomId] === playerId) {
-      console.log(`[GAME] El host inicia la partida a la sala ${roomId}`);
+      console.log(\`[GAME] El host inicia la partida a la sala \${roomId}\`);
       io.to(roomId).emit('startGame', { roomId: roomId });
     }
   });
@@ -263,17 +266,17 @@ io.on('connection', (socket) => {
           io.to(roomId).emit('updateLobby', { players: playersList });
         }
 
-        console.log(`[DESCONNEXIÓ] El jugador ${playerName} ha marxat de la sala ${roomId}.`);
+        console.log(\`[DESCONNEXIÓ] El jugador \${playerName} ha marxat de la sala \${roomId}.\`);
 
         // Si no queden jugadors, eliminar la sala completament
         if (!roomPlayers[roomId] || roomPlayers[roomId].length === 0) {
           roomIdToCleanup = roomId;
-          console.log(`[CLEANUP] Eliminant sala ${roomId} (0 jugadors)`);
+          console.log(\`[CLEANUP] Eliminant sala \${roomId} (0 jugadors)\`);
 
           // Eliminar de MongoDB
           try {
             await Sala.findByIdAndDelete(roomId);
-            console.log(`[DB] Sala ${roomId} eliminada de la base de dades`);
+            console.log(\`[DB] Sala \${roomId} eliminada de la base de dades\`);
           } catch (err) {
             console.error('Error eliminant la sala:', err);
           }
@@ -282,7 +285,7 @@ io.on('connection', (socket) => {
           try {
             await Sala.findByIdAndUpdate(
               roomId,
-              { $pull: { jugadors_actuals: playerName } },
+              { \$pull: { jugadors_actuals: playerName } },
               { new: true }
             );
           } catch (err) {
@@ -336,7 +339,6 @@ app.post('/api/rooms/:roomId/join', (req, res) => gameController.joinRoom(req, r
 app.get('/api/rooms/:roomId', async (req, res) => {
   const { roomId } = req.params;
   try {
-    const Sala = require('./models/Sala');
     const sala = await Sala.findById(roomId);
     if (!sala) {
       return res.status(404).json({ error: 'Sala no trobada' });
@@ -356,5 +358,5 @@ app.get('/api/rankings', (req, res) => resultController.getRankings(req, res));
 
 // Iniciar el servidor
 server.listen(PORT, () => {
-  console.log(`Servidor executant-se a http://localhost:${PORT}`);
+  console.log(\`Servidor executant-se a http://localhost:\${PORT}\`);
 });

@@ -16,7 +16,7 @@ using SocketIOClient;
 public class MainMenuManager : MonoBehaviour
 {
     // URL del servidor Node.js
-    private string urlServidor = "http://localhost:3000";
+    private string urlServidor = "http://204.168.209.55:8080";
 
     [Header("Panells del Menú")]
     public GameObject panellPrincipal;
