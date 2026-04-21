@@ -138,6 +138,7 @@ public class AuthManager : MonoBehaviour
 
             yield return www.SendWebRequest();
 
+
             if (www.result == UnityWebRequest.Result.Success)
             {
                 string resposta = www.downloadHandler.text;
