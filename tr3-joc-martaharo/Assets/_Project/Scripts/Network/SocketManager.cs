@@ -8,7 +8,10 @@ public class SocketNetworkManager : MonoBehaviour
     public static SocketNetworkManager Instance { get; private set; }
 
     private SocketIO client;
+ [Header("Configuració de Connexió")]
+    public bool usarServidorRemot = false; 
     private string serverUrl = "http://localhost:3000";
+    private string urlServidor = "http://204.168.209.55:3000";
     
     private string currentRoomId;
     private string playerId;
@@ -41,7 +44,10 @@ public class SocketNetworkManager : MonoBehaviour
 
     IEnumerator Connect()
     {
-        client = new SocketIO(serverUrl);
+        string urlFinal = usarServidorRemot ? urlServidor : serverUrl;
+        client = new SocketIO(urlFinal);
+        
+        Debug.Log("Connectant a: " + urlFinal);
 
         client.On("playerMoved", (data) =>
         {
