@@ -8,7 +8,7 @@ using System.Text;
 public class AuthManager : MonoBehaviour
 {
     [Header("Configuració de Connexió")]
-    public bool usarServidorRemot = false; 
+    public bool usarServidorRemot = true; 
     
     private string urlLocal = "http://localhost:8080/api/auth";
     private string urlServidor = "http://204.168.209.55:8080/api/auth";
