@@ -8,14 +8,14 @@ const mongoose = require('mongoose');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const MONGO_URI = process.env.MONGO_URI;
+const MONGO_URL = process.env.MONGO_URL;
 
 // Funció per connectar amb reintents
 async function connectToMongoDB(retries = 5, delay = 3000) {
   for (let i = 0; i < retries; i++) {
     try {
-      console.log(`[MONGO] Intentant connexió a MongoDB (intent ${i + 1}/${retries})...`);
-      await mongoose.connect(MONGO_URI);
+      console.log(`[MONGO] Intentant connexió a: ${MONGO_URL}`);
+      await mongoose.connect(MONGO_URL);
       console.log('Connectat a la base de dades joc_multijugador ✅');
       await initializeDatabase();
       return;
@@ -88,7 +88,7 @@ io.on('connection', (socket) => {
   // Quan un jugador s'uneix a una sala
   socket.on('joinRoom', (data) => {
     const { roomId, playerId, playerName } = data;
-    
+
     // Unir el socket a la sala de Socket.io
     socket.join(roomId);
 
@@ -138,7 +138,7 @@ io.on('connection', (socket) => {
   // Quan l'enemic es registra a la sala
   socket.on('registerEnemy', (data) => {
     const { roomId } = data;
-    
+
     if (!roomEnemyPositions[roomId]) {
       roomEnemyPositions[roomId] = { x: 0, y: 0 };
     }
@@ -183,60 +183,60 @@ io.on('connection', (socket) => {
     //console.log(`Posició rebuda de ${playerId}: (${x}, ${y}) a la sala ${roomId}`);
   });
 
-    // Quan un jugador guanya la partida
-    socket.on('gameFinished', (data) => {
-        const { roomId, winnerId, winnerName } = data;
-        
-        // Bloquejar la meta perquè l'altre jugador no pugui guanyar
-        if (roomGoalStatus[roomId]) {
-          roomGoalStatus[roomId].blocked = true;
-          roomGoalStatus[roomId].winner = winnerName;
-        }
-        
-        io.to(roomId).emit('goalStatus', roomGoalStatus[roomId]);
-        
-        io.to(roomId).emit('gameFinished', {
-            winnerId: winnerId,
-            winnerName: winnerName
-        });
+  // Quan un jugador guanya la partida
+  socket.on('gameFinished', (data) => {
+    const { roomId, winnerId, winnerName } = data;
 
-        io.to(roomId).emit('playerWon', {
-            winnerName: winnerName
-        });
+    // Bloquejar la meta perquè l'altre jugador no pugui guanyar
+    if (roomGoalStatus[roomId]) {
+      roomGoalStatus[roomId].blocked = true;
+      roomGoalStatus[roomId].winner = winnerName;
+    }
 
-        console.log(`[VICTÒRIA] El jugador ${winnerName} ha guanyat a la sala ${roomId}`);
+    io.to(roomId).emit('goalStatus', roomGoalStatus[roomId]);
+
+    io.to(roomId).emit('gameFinished', {
+      winnerId: winnerId,
+      winnerName: winnerName
     });
 
-    // Quan un jugador és atrapat per l'enemic (multijugador)
-    socket.on('playerCaught', (data) => {
-        const { roomId, playerId } = data;
-        
-        // Notificar a tots els jugadors que facin respawn
-        io.to(roomId).emit('playerCaught', {
-            playerId: playerId
-        });
-
-        // Notificar per fer respawn
-        io.to(roomId).emit('doRespawn', {
-            playerId: playerId
-        });
-
-        console.log(`[ENEMIC] El jugador ${playerId} ha estat atrapat a la sala ${roomId}`);
+    io.to(roomId).emit('playerWon', {
+      winnerName: winnerName
     });
 
-    // Quan el host clica "Començar" - inicia la partida
-    socket.on('startGame', (data) => {
-        const { roomId } = data;
-        
-        // Verificar que som el host
-        if (hostPlayer[roomId] === playerId) {
-            console.log(`[GAME] El host inicia la partida a la sala ${roomId}`);
-            io.to(roomId).emit('startGame', { roomId: roomId });
-        }
+    console.log(`[VICTÒRIA] El jugador ${winnerName} ha guanyat a la sala ${roomId}`);
+  });
+
+  // Quan un jugador és atrapat per l'enemic (multijugador)
+  socket.on('playerCaught', (data) => {
+    const { roomId, playerId } = data;
+
+    // Notificar a tots els jugadors que facin respawn
+    io.to(roomId).emit('playerCaught', {
+      playerId: playerId
     });
 
-    // Quan un jugador es desconnecta
-    socket.on('jugadorDesconnectat', async (data) => {
+    // Notificar per fer respawn
+    io.to(roomId).emit('doRespawn', {
+      playerId: playerId
+    });
+
+    console.log(`[ENEMIC] El jugador ${playerId} ha estat atrapat a la sala ${roomId}`);
+  });
+
+  // Quan el host clica "Començar" - inicia la partida
+  socket.on('startGame', (data) => {
+    const { roomId } = data;
+
+    // Verificar que som el host
+    if (hostPlayer[roomId] === playerId) {
+      console.log(`[GAME] El host inicia la partida a la sala ${roomId}`);
+      io.to(roomId).emit('startGame', { roomId: roomId });
+    }
+  });
+
+  // Quan un jugador es desconnecta
+  socket.on('jugadorDesconnectat', async (data) => {
     const { playerId } = data;
 
     let roomIdToCleanup = null;
@@ -245,49 +245,49 @@ io.on('connection', (socket) => {
     for (const [roomId, positions] of Object.entries(roomPositions)) {
       if (positions[playerId]) {
         const playerName = positions[playerId].name;
-        
+
         // Eliminar el jugador de les posicions
         delete roomPositions[roomId][playerId];
-        
+
         // Eliminar de roomPlayers
         if (roomPlayers[roomId]) {
-            roomPlayers[roomId] = roomPlayers[roomId].filter(p => p.id !== playerId);
+          roomPlayers[roomId] = roomPlayers[roomId].filter(p => p.id !== playerId);
         }
-        
+
         // Notificar a la sala
         io.to(roomId).emit('jugadorDesconnectat', { playerId: playerId });
 
         // Notificar updateLobby
         if (roomPlayers[roomId]) {
-            const playersList = roomPlayers[roomId].map(p => ({ name: p.name, playerNumber: p.playerNumber }));
-            io.to(roomId).emit('updateLobby', { players: playersList });
+          const playersList = roomPlayers[roomId].map(p => ({ name: p.name, playerNumber: p.playerNumber }));
+          io.to(roomId).emit('updateLobby', { players: playersList });
         }
 
         console.log(`[DESCONNEXIÓ] El jugador ${playerName} ha marxat de la sala ${roomId}.`);
 
         // Si no queden jugadors, eliminar la sala completament
         if (!roomPlayers[roomId] || roomPlayers[roomId].length === 0) {
-            roomIdToCleanup = roomId;
-            console.log(`[CLEANUP] Eliminant sala ${roomId} (0 jugadors)`);
-            
-            // Eliminar de MongoDB
-            try {
-                await Sala.findByIdAndDelete(roomId);
-                console.log(`[DB] Sala ${roomId} eliminada de la base de dades`);
-            } catch (err) {
-                console.error('Error eliminant la sala:', err);
-            }
+          roomIdToCleanup = roomId;
+          console.log(`[CLEANUP] Eliminant sala ${roomId} (0 jugadors)`);
+
+          // Eliminar de MongoDB
+          try {
+            await Sala.findByIdAndDelete(roomId);
+            console.log(`[DB] Sala ${roomId} eliminada de la base de dades`);
+          } catch (err) {
+            console.error('Error eliminant la sala:', err);
+          }
         } else {
-            // Actualitzar la sala a MongoDB: treure el jugador
-            try {
-              await Sala.findByIdAndUpdate(
-                roomId,
-                { $pull: { jugadors_actuals: playerName } },
-                { new: true }
-              );
-            } catch (err) {
-              console.error('Error actualitzant la sala:', err);
-            }
+          // Actualitzar la sala a MongoDB: treure el jugador
+          try {
+            await Sala.findByIdAndUpdate(
+              roomId,
+              { $pull: { jugadors_actuals: playerName } },
+              { new: true }
+            );
+          } catch (err) {
+            console.error('Error actualitzant la sala:', err);
+          }
         }
         break;
       }
@@ -295,11 +295,11 @@ io.on('connection', (socket) => {
 
     // Netejar dades de la sala buida
     if (roomIdToCleanup) {
-        delete roomPositions[roomIdToCleanup];
-        delete roomEnemyPositions[roomIdToCleanup];
-        delete roomGoalStatus[roomIdToCleanup];
-        delete roomPlayers[roomIdToCleanup];
-        delete hostPlayer[roomIdToCleanup];
+      delete roomPositions[roomIdToCleanup];
+      delete roomEnemyPositions[roomIdToCleanup];
+      delete roomGoalStatus[roomIdToCleanup];
+      delete roomPlayers[roomIdToCleanup];
+      delete hostPlayer[roomIdToCleanup];
     }
   });
 
@@ -334,17 +334,17 @@ app.post('/api/rooms/:roomId/join', (req, res) => gameController.joinRoom(req, r
 
 // Ruta per verificar si una sala existeix (per room-not-found)
 app.get('/api/rooms/:roomId', async (req, res) => {
-    const { roomId } = req.params;
-    try {
-        const Sala = require('./models/Sala');
-        const sala = await Sala.findById(roomId);
-        if (!sala) {
-            return res.status(404).json({ error: 'Sala no trobada' });
-        }
-        res.json({ exists: true, room: sala });
-    } catch (err) {
-        res.status(404).json({ error: 'Sala no trobada' });
+  const { roomId } = req.params;
+  try {
+    const Sala = require('./models/Sala');
+    const sala = await Sala.findById(roomId);
+    if (!sala) {
+      return res.status(404).json({ error: 'Sala no trobada' });
     }
+    res.json({ exists: true, room: sala });
+  } catch (err) {
+    res.status(404).json({ error: 'Sala no trobada' });
+  }
 });
 
 // =====================

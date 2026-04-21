@@ -10,8 +10,8 @@ public class AuthManager : MonoBehaviour
     [Header("Configuració de Connexió")]
     public bool usarServidorRemot = false; 
     
-private string urlLocal = "http://204.168.209.55:8080/api/auth";
-    private string urlServidor = "http://204.168.209.55:8080/api/auth"; 
+    private string urlLocal = "http://localhost:8080/api/auth";
+    private string urlServidor = "http://204.168.209.55:8080/api/auth";
 
     [Header("Formulari de Login")]
     public TMP_InputField campUsuari;
@@ -23,6 +23,9 @@ private string urlLocal = "http://204.168.209.55:8080/api/auth";
 
     public void FerLogin()
     {
+        Debug.Log(">>> EXECUTANT ACCIÓ <<<");
+        Debug.Log(">>> BOTÓN LOGIN CLICADO <<<");
+        
         string usuari = campUsuari.text;
         string contrasenya = campContrasenya.text;
 
@@ -45,20 +48,27 @@ private string urlLocal = "http://204.168.209.55:8080/api/auth";
     {
         MostrarError("Connectant...");
         
-        string baseUrlFinal = usarServidorRemot ? urlServidor : urlLocal;
+        string baseUrl = usarServidorRemot ? urlServidor : urlLocal;
+        string fullUrl = baseUrl.TrimEnd('/') + "/login";
+        
+        Debug.Log(">>> INTENTANT LOGIN A: " + fullUrl);
 
+        // Definició correcta del jsonData abans del seu ús
         LoginRequest peticio = new LoginRequest();
         peticio.username = usuari;
         peticio.password = contrasenya;
-
         string jsonData = JsonUtility.ToJson(peticio);
 
-        using (UnityWebRequest www = new UnityWebRequest(baseUrlFinal + "/login", "POST"))
+        using (UnityWebRequest www = new UnityWebRequest(fullUrl, "POST"))
         {
+            www.timeout = 60;
+            www.useHttpContinue = false;
+            
             byte[] jsonToSend = new UTF8Encoding(true).GetBytes(jsonData);
             www.uploadHandler = new UploadHandlerRaw(jsonToSend);
             www.downloadHandler = new DownloadHandlerBuffer();
             www.SetRequestHeader("Content-Type", "application/json");
+            www.SetRequestHeader("Accept", "application/json"); // Afegit per a compatibilitat total
 
             yield return www.SendWebRequest();
 
@@ -77,8 +87,11 @@ private string urlLocal = "http://204.168.209.55:8080/api/auth";
             }
             else
             {
+                string respostaError = www.downloadHandler.text;
+                Debug.LogError($">>> ERROR TÉCNIC LOGIN: URL={fullUrl} | Codi={www.responseCode} | Error={www.error} | Reachability={Application.internetReachability}");
+                Debug.LogError($">>> COS DE LA RESPOSTA: {respostaError}");
+                
                 string errorMsg;
-
                 if (www.responseCode == 401)
                 {
                     errorMsg = "Usuari o contrasenya incorrectes";
@@ -95,6 +108,8 @@ private string urlLocal = "http://204.168.209.55:8080/api/auth";
 
     public void FerRegistre()
     {
+        Debug.Log(">>> EXECUTANT ACCIÓ <<<");
+        
         string usuari = campUsuari.text;
         string contrasenya = campContrasenya.text;
 
@@ -122,23 +137,30 @@ private string urlLocal = "http://204.168.209.55:8080/api/auth";
     IEnumerator RegistreCoroutine(string usuari, string contrasenya)
     {
         MostrarError("Creant compte...");
-        string baseUrlFinal = usarServidorRemot ? urlServidor : urlLocal;
+        
+        string baseUrl = usarServidorRemot ? urlServidor : urlLocal;
+        string fullUrl = baseUrl.TrimEnd('/') + "/register";
+        
+        Debug.Log(">>> INTENTANT REGISTRE A: " + fullUrl);
 
+        // Definició correcta del jsonData abans del seu ús
         LoginRequest peticio = new LoginRequest();
         peticio.username = usuari;
         peticio.password = contrasenya;
-
         string jsonData = JsonUtility.ToJson(peticio);
 
-        using (UnityWebRequest www = new UnityWebRequest(baseUrlFinal + "/register", "POST"))
+        using (UnityWebRequest www = new UnityWebRequest(fullUrl, "POST"))
         {
+            www.timeout = 60;
+            www.useHttpContinue = false;
+            
             byte[] jsonToSend = new UTF8Encoding(true).GetBytes(jsonData);
             www.uploadHandler = new UploadHandlerRaw(jsonToSend);
             www.downloadHandler = new DownloadHandlerBuffer();
             www.SetRequestHeader("Content-Type", "application/json");
+            www.SetRequestHeader("Accept", "application/json");
 
             yield return www.SendWebRequest();
-
 
             if (www.result == UnityWebRequest.Result.Success)
             {
@@ -157,8 +179,11 @@ private string urlLocal = "http://204.168.209.55:8080/api/auth";
             }
             else
             {
+                string respostaError = www.downloadHandler.text;
+                Debug.LogError($">>> ERROR TÉCNIC REGISTRE: URL={fullUrl} | Codi={www.responseCode} | Error={www.error} | Reachability={Application.internetReachability}");
+                Debug.LogError($">>> COS DE LA RESPOSTA: {respostaError}");
+                
                 string errorMsg;
-
                 if (www.responseCode == 409)
                 {
                     errorMsg = "Aquest usuari ja existeix";
@@ -196,11 +221,6 @@ private string urlLocal = "http://204.168.209.55:8080/api/auth";
         token = null;
         username = null;
         SceneManager.LoadScene("Login");
-    }
-
-    void CanviarAMenu()
-    {
-        SceneManager.LoadScene("Menu");
     }
 
     [System.Serializable]

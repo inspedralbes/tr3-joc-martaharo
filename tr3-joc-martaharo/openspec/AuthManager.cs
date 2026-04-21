@@ -8,9 +8,12 @@ using System.Text;
 public class AuthManager : MonoBehaviour
 {
     [Header("Configuració de Connexió")]
-    public bool usarServidorRemot = false; 
-    private string urlLocal = "http://localhost:8080/api/auth";
-    private string urlServidor = "http://204.168.209.55:8080/api/auth"; 
+public bool usarServidorRemot = false; 
+
+// A LOCAL (quan la casella està desmarcada)
+private string urlLocal = "http://localhost:8080/api/auth";
+// A SERVIDOR (quan la casella està MARCADA)
+private string urlServidor = "http://204.168.209.55:8080/api/auth";
 
     [Header("Formulari de Login")]
     public TMP_InputField campUsuari;
@@ -18,7 +21,7 @@ public class AuthManager : MonoBehaviour
     public TextMeshProUGUI missatgeError;
 
     public static string token { get; private set; }
-    public static string nomUsuari { get; private set; }
+    public static string username { get; private set; }
 
     public void FerLogin()
     {
@@ -67,9 +70,9 @@ public class AuthManager : MonoBehaviour
                 LoginResposta dadesResposta = JsonUtility.FromJson<LoginResposta>(resposta);
 
                 token = dadesResposta.token;
-                nomUsuari = dadesResposta.username;
+                username = dadesResposta.username;
 
-                Debug.Log("Login correcte! Benvingut/da: " + nomUsuari);
+                Debug.Log("Login correcte! Benvingut/da: " + username);
 
                 MostrarExit("Sessió iniciada. Benvingut/da!");
                 SceneManager.LoadScene("Menu");
@@ -145,9 +148,9 @@ public class AuthManager : MonoBehaviour
                 LoginResposta dadesResposta = JsonUtility.FromJson<LoginResposta>(resposta);
 
                 token = dadesResposta.token;
-                nomUsuari = dadesResposta.username;
+                username = dadesResposta.username;
 
-                Debug.Log("Registre correcte! Benvingut/da: " + nomUsuari);
+                Debug.Log("Registre correcte! Benvingut/da: " + username);
                 
                 MostrarExit("Usuari creat correctament!");
                 
@@ -193,7 +196,7 @@ public class AuthManager : MonoBehaviour
     public void TancarSessio()
     {
         token = null;
-        nomUsuari = null;
+        username = null;
         SceneManager.LoadScene("Login");
     }
 
