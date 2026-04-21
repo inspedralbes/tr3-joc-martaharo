@@ -7,7 +7,10 @@ using System.Text;
 
 public class AuthManager : MonoBehaviour
 {
-    private string baseUrl = "http://localhost:8080/api/auth";
+    [Header("Configuració de Connexió")]
+    public bool usarServidorRemot = false; 
+    private string urlLocal = "http://localhost:8080/api/auth";
+    private string urlServidor = "http://204.168.209.55:8080/api/auth"; 
 
     [Header("Formulari de Login")]
     public TMP_InputField campUsuari;
@@ -40,6 +43,8 @@ public class AuthManager : MonoBehaviour
     IEnumerator LoginCoroutine(string usuari, string contrasenya)
     {
         MostrarError("Connectant...");
+        
+        string baseUrlFinal = usarServidorRemot ? urlServidor : urlLocal;
 
         LoginRequest peticio = new LoginRequest();
         peticio.username = usuari;
@@ -47,7 +52,7 @@ public class AuthManager : MonoBehaviour
 
         string jsonData = JsonUtility.ToJson(peticio);
 
-        using (UnityWebRequest www = new UnityWebRequest(baseUrl + "/login", "POST"))
+        using (UnityWebRequest www = new UnityWebRequest(baseUrlFinal + "/login", "POST"))
         {
             byte[] jsonToSend = new UTF8Encoding(true).GetBytes(jsonData);
             www.uploadHandler = new UploadHandlerRaw(jsonToSend);
@@ -116,6 +121,7 @@ public class AuthManager : MonoBehaviour
     IEnumerator RegistreCoroutine(string usuari, string contrasenya)
     {
         MostrarError("Creant compte...");
+        string baseUrlFinal = usarServidorRemot ? urlServidor : urlLocal;
 
         LoginRequest peticio = new LoginRequest();
         peticio.username = usuari;
@@ -123,7 +129,7 @@ public class AuthManager : MonoBehaviour
 
         string jsonData = JsonUtility.ToJson(peticio);
 
-        using (UnityWebRequest www = new UnityWebRequest(baseUrl + "/register", "POST"))
+        using (UnityWebRequest www = new UnityWebRequest(baseUrlFinal + "/register", "POST"))
         {
             byte[] jsonToSend = new UTF8Encoding(true).GetBytes(jsonData);
             www.uploadHandler = new UploadHandlerRaw(jsonToSend);
