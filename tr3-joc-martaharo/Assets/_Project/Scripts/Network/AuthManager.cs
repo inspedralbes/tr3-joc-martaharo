@@ -10,8 +10,8 @@ public class AuthManager : MonoBehaviour
     [Header("Configuració de Connexió")]
     public bool usarServidorRemot = true; 
     
-    private string urlLocal = "http://localhost:8080/api/auth";
-    private string urlServidor = "http://204.168.209.55:8080/api/auth";
+    private string urlLocal = "http://localhost/api/auth"; 
+private string urlServidor = "http://204.168.209.55/api/auth";
 
     [Header("Formulari de Login")]
     public TMP_InputField campUsuari;

@@ -16,7 +16,9 @@ using SocketIOClient;
 public class MainMenuManager : MonoBehaviour
 {
     // URL del servidor Node.js
-    private string urlServidor = "http://204.168.209.55:8080";
+    [Header("Configuración del Servidor")]
+    public string urlServidor = "http://204.168.209.55";
+    public string puertoServidor = "3000";
 
     [Header("Panells del Menú")]
     public GameObject panellPrincipal;
@@ -39,26 +41,25 @@ public class MainMenuManager : MonoBehaviour
     public static bool isSinglePlayer { get; set; }
     public static string playerNumber { get; private set; }
     
-    // NOU: Flag per saber si som el Host (el que crea la sala)
     public static bool isHost;
 
-    // Socket.io client per escoltar errors
     private SocketIO socketClient;
 
     void Start()
     {
-        // Mostrar panell principal
         MostrarPanellPrincipal();
-        
-        // Iniciar Socket.io per escoltar errors d'unió
         ConnectarSocketPerErrors();
     }
     
     async void ConnectarSocketPerErrors()
     {
-        socketClient = new SocketIO(urlServidor);
+        string urlLimpia = urlServidor.Trim().TrimEnd('/');
+        if (!string.IsNullOrEmpty(puertoServidor))
+        {
+            urlLimpia = urlLimpia + ":" + puertoServidor;
+        }
+        socketClient = new SocketIO(urlLimpia);
         
-        // Escoltar errors d'unió a sala
         socketClient.On("joinError", response => {
             string errorMsg = response.GetValue<string>();
             UnityMainThreadDispatcher.Instance.Enqueue(() => {
@@ -79,7 +80,6 @@ public class MainMenuManager : MonoBehaviour
                 }
                 else
                 {
-                    // Fallback a TMP
                     missatgeUnir.text = errorMsg.Contains("full") ? "SALA PLENA" : "CODI INCORRECTE";
                     missatgeUnir.color = Color.red;
                 }
@@ -96,7 +96,6 @@ public class MainMenuManager : MonoBehaviour
         panellUnirSala.SetActive(false);
     }
 
-    // Botó: Jugar Sol (Single Player) - Mode Individual Offline
     public void JugarSol()
     {
         isSinglePlayer = true;
@@ -105,9 +104,6 @@ public class MainMenuManager : MonoBehaviour
         SceneManager.LoadScene("Joc_IA");
     }
 
-    // Mode Individual Offline - No cal crear sala al servidor
-
-    // Botó: Crear Sala Multiplayer
     public void CrearSalaMultiplayer()
     {
         panellPrincipal.SetActive(false);
@@ -130,41 +126,93 @@ public class MainMenuManager : MonoBehaviour
         missatgeCrear.text = "Creant sala...";
         missatgeCrear.color = Color.white;
 
-        using (UnityWebRequest www = new UnityWebRequest(urlServidor + "/api/rooms", "POST"))
+        // URL de Seguridad: Trim y eliminar '/' final
+        string urlBase = urlServidor.Trim().TrimEnd('/');
+        if (!string.IsNullOrEmpty(puertoServidor))
+        {
+            urlBase = urlBase + ":" + puertoServidor;
+        }
+        string url = urlBase + "/api/rooms";
+
+        // Debug de Headers
+        Debug.Log("===========================================");
+        Debug.Log("[MainMenuManager] Enviando POST a: " + url);
+        Debug.Log("[MainMenuManager] urlServidor original: " + urlServidor);
+        Debug.Log("[MainMenuManager] urlBase limpia: " + urlBase);
+        
+        if (AuthManager.token != null && AuthManager.token != "")
+        {
+            Debug.Log("[MainMenuManager] Token: PRESENTE");
+        }
+        else
+        {
+            Debug.Log("[MainMenuManager] Token: NO ESTÁ (se envía sin Authorization)");
+        }
+        Debug.Log("===========================================");
+
+        using (UnityWebRequest www = new UnityWebRequest(url, "POST"))
         {
             byte[] jsonToSend = new UTF8Encoding(true).GetBytes("{}");
             www.uploadHandler = new UploadHandlerRaw(jsonToSend);
             www.downloadHandler = new DownloadHandlerBuffer();
             www.SetRequestHeader("Content-Type", "application/json");
-            www.SetRequestHeader("Authorization", "Bearer " + AuthManager.token);
+
+            // Login Opcional: Si NO hay token, envía sin header Authorization
+            if (AuthManager.token != null && AuthManager.token != "")
+            {
+                www.SetRequestHeader("Authorization", "Bearer " + AuthManager.token);
+            }
 
             yield return www.SendWebRequest();
 
-            if (www.result == UnityWebRequest.Result.Success)
+            string respuesta = www.downloadHandler.text;
+            long codigo = www.responseCode;
+
+            Debug.Log("[MainMenuManager] HTTP Código: " + codigo);
+            Debug.Log("[MainMenuManager] Respuesta: " + respuesta.Substring(0, Mathf.Min(200, respuesta.Length)));
+
+            // Detección de HTML mejorada
+            if (respuesta.Contains("<!DOCTYPE") || respuesta.Contains("<html") || respuesta.Contains("Cannot POST") || respuesta.Contains("Cannot"))
             {
-                string resposta = www.downloadHandler.text;
-                RoomResponse dades = JsonUtility.FromJson<RoomResponse>(resposta);
+                Debug.LogError("===========================================");
+                Debug.LogError("ERROR: El Nginx no está redirigiendo al Backend. Revisa el default.conf");
+                Debug.LogError("URL intentada: " + url);
+                Debug.LogError("==============================");
+                missatgeCrear.text = "Error: Nginx no conecta con Backend";
+                missatgeCrear.color = Color.red;
+                yield break;
+            }
 
-                roomId = dades.roomId;
-                roomCode = dades.roomCode;
-                isSinglePlayer = false;
+            if (www.result == UnityWebRequest.Result.Success && codigo >= 200 && codigo < 300)
+            {
+                RoomResponse dades = JsonUtility.FromJson<RoomResponse>(respuesta);
                 
-                // MARQUEM COM A HOST
-                isHost = true;
+                if (dades != null && !string.IsNullOrEmpty(dades.roomId))
+                {
+                    roomId = dades.roomId;
+                    roomCode = dades.roomCode;
+                    isSinglePlayer = false;
+                    isHost = true;
 
-                textCodiSala.text = "Codi: " + roomCode;
-                missatgeCrear.text = "Sala creada! Comparteix el codi amb el teu company.";
-                missatgeCrear.color = Color.green;
+                    textCodiSala.text = "Codi: " + roomCode;
+                    missatgeCrear.text = "Sala creada! Comparteix el codi amb el teu company.";
+                    missatgeCrear.color = Color.green;
 
-                Debug.Log("Sala multiplayer creada (Només Backend): " + roomCode);
-
-                yield return new WaitForSeconds(1f);
-                SceneManager.LoadScene("Lobby");
+                    Debug.Log("[MainMenuManager] ✅ Sala creada: " + roomCode);
+                    yield return new WaitForSeconds(1f);
+                    SceneManager.LoadScene("Lobby");
+                }
+                else
+                {
+                    Debug.LogError("[MainMenuManager] Error: JSON inválido del servidor");
+                    missatgeCrear.text = "Error al crear la sala";
+                    missatgeCrear.color = Color.red;
+                }
             }
             else
             {
-                Debug.LogError("Error creant sala: " + www.error);
-                missatgeCrear.text = "Error al crear la sala.";
+                Debug.LogError("[MainMenuManager] Error HTTP: " + codigo + " - " + respuesta);
+                missatgeCrear.text = "Error: Código " + codigo;
                 missatgeCrear.color = Color.red;
             }
         }
@@ -177,11 +225,10 @@ public class MainMenuManager : MonoBehaviour
             GUIUtility.systemCopyBuffer = roomCode;
             missatgeCrear.text = "Codi copiat!";
             missatgeCrear.color = Color.yellow;
-            Debug.Log("Codi copiat al portapapers: " + roomCode);
+            Debug.Log("Codi copiat: " + roomCode);
         }
     }
 
-    // Botó: Unir-se a Sala
     public void UnirSalaMultiplayer()
     {
         panellPrincipal.SetActive(false);
@@ -216,45 +263,58 @@ public class MainMenuManager : MonoBehaviour
         missatgeUnir.text = "Buscant sala...";
         missatgeUnir.color = Color.white;
 
-        using (UnityWebRequest www = UnityWebRequest.Get(urlServidor + "/api/rooms"))
+        string urlBase = urlServidor.Trim().TrimEnd('/');
+        if (!string.IsNullOrEmpty(puertoServidor))
         {
-            www.SetRequestHeader("Authorization", "Bearer " + AuthManager.token);
+            urlBase = urlBase + ":" + puertoServidor;
+        }
+        string url = urlBase + "/api/rooms";
+
+        Debug.Log("[MainMenuManager] Buscando sala con código: " + codi);
+
+        using (UnityWebRequest www = UnityWebRequest.Get(url))
+        {
+            if (AuthManager.token != null && AuthManager.token != "")
+            {
+                www.SetRequestHeader("Authorization", "Bearer " + AuthManager.token);
+            }
 
             yield return www.SendWebRequest();
 
+            string respuesta = www.downloadHandler.text;
+
+            if (respuesta.Contains("<!DOCTYPE") || respuesta.Contains("<html"))
+            {
+                Debug.LogError("ERROR: El servidor respondió con HTML en /api/rooms");
+                missatgeUnir.text = "Error de connexió";
+                missatgeUnir.color = Color.red;
+                yield break;
+            }
+
             if (www.result == UnityWebRequest.Result.Success)
             {
-                string respostaRaw = www.downloadHandler.text;
-                string jsonFix = "{\"sales\":" + respostaRaw + "}";
-                
-                LlistaSalesWrapper salesWrapper = JsonUtility.FromJson<LlistaSalesWrapper>(jsonFix);
+                string jsonFix = "{\"rooms\":" + respuesta + "}";
+                RoomsWrapper wrapper = JsonUtility.FromJson<RoomsWrapper>(jsonFix);
 
-                SalaInfo salaTrobada = null;
-                if (salesWrapper != null && salesWrapper.sales != null)
+                if (wrapper != null && wrapper.rooms != null)
                 {
-                    foreach (SalaInfo room in salesWrapper.sales)
+                    foreach (SalaInfo sala in wrapper.rooms)
                     {
-                        if (room.codi_sala == codi)
+                        if (sala.codi_sala == codi)
                         {
-                            salaTrobada = room;
-                            break;
+                            yield return UnirSalaPerId(sala.id, sala.codi_sala);
+                            yield break;
                         }
                     }
                 }
 
-                if (salaTrobada != null)
-                {
-                    yield return UnirSalaPerId(salaTrobada.id, salaTrobada.codi_sala);
-                }
-                else
-                {
-                    missatgeUnir.text = "Aquesta sala no existeix";
-                    missatgeUnir.color = Color.red;
-                }
+                missatgeUnir.text = "Aquesta sala no existeix";
+                missatgeUnir.color = Color.red;
             }
             else
             {
-                missatgeUnir.text = "Error cercant sales.";
+                Debug.LogError("[MainMenuManager] Error HTTP: " + www.responseCode);
+                missatgeUnir.text = "Error cercant sales";
                 missatgeUnir.color = Color.red;
             }
         }
@@ -262,23 +322,45 @@ public class MainMenuManager : MonoBehaviour
 
     IEnumerator UnirSalaPerId(string idSala, string codi)
     {
-        using (UnityWebRequest www = new UnityWebRequest(urlServidor + "/api/rooms/" + idSala + "/join", "POST"))
+        string urlBase = urlServidor.Trim().TrimEnd('/');
+        if (!string.IsNullOrEmpty(puertoServidor))
         {
+            urlBase = urlBase + ":" + puertoServidor;
+        }
+        string url = urlBase + "/api/rooms/" + idSala + "/join";
+
+        using (UnityWebRequest www = new UnityWebRequest(url, "POST"))
+        {
+            byte[] jsonToSend = new UTF8Encoding(true).GetBytes("{}");
+            www.uploadHandler = new UploadHandlerRaw(jsonToSend);
             www.downloadHandler = new DownloadHandlerBuffer();
-            www.SetRequestHeader("Authorization", "Bearer " + AuthManager.token);
+            www.SetRequestHeader("Content-Type", "application/json");
+
+            if (AuthManager.token != null && AuthManager.token != "")
+            {
+                www.SetRequestHeader("Authorization", "Bearer " + AuthManager.token);
+            }
 
             yield return www.SendWebRequest();
+
+            string respuesta = www.downloadHandler.text;
+
+            if (respuesta.Contains("<!DOCTYPE") || respuesta.Contains("<html"))
+            {
+                Debug.LogError("ERROR: No se pudo unir - HTML recibido");
+                missatgeUnir.text = "Error de ruta";
+                missatgeUnir.color = Color.red;
+                yield break;
+            }
 
             if (www.result == UnityWebRequest.Result.Success)
             {
                 roomId = idSala;
                 roomCode = codi;
                 isSinglePlayer = false;
-                
-                // MARQUEM COM A CLIENT
                 isHost = false;
 
-                Debug.Log("Unit a la sala (Només Backend): " + idSala);
+                Debug.Log("[MainMenuManager] ✅ Unit a la sala: " + idSala);
                 missatgeUnir.text = "Unit a la sala! Començant...";
                 missatgeUnir.color = Color.green;
 
@@ -287,9 +369,8 @@ public class MainMenuManager : MonoBehaviour
             }
             else
             {
-                string errorResposta = www.downloadHandler.text;
-                ErrorResponse error = JsonUtility.FromJson<ErrorResponse>(errorResposta);
-                missatgeUnir.text = error.error;
+                Debug.LogError("[MainMenuManager] Error HTTP: " + www.responseCode);
+                missatgeUnir.text = "Error al unir-se";
                 missatgeUnir.color = Color.red;
             }
         }
@@ -300,15 +381,7 @@ public class MainMenuManager : MonoBehaviour
         MostrarPanellPrincipal();
     }
 
-    // Classes per deserialitzar respostes
-    [System.Serializable]
-    public class SinglePlayerRoomResponse
-    {
-        public string roomId;
-        public string roomCode;
-        public RoomData room;
-    }
-
+    // Classes [System.Serializable] dentro de la clase principal
     [System.Serializable]
     public class RoomResponse
     {
@@ -317,23 +390,17 @@ public class MainMenuManager : MonoBehaviour
     }
 
     [System.Serializable]
-    public class RoomData
-    {
-        public string nom_sala;
-    }
-
-    [System.Serializable]
-    public class LlistaSalesWrapper
-    {
-        public SalaInfo[] sales;
-    }
-
-    [System.Serializable]
     public class SalaInfo
     {
         public string id;
         public string nom_sala;
         public string codi_sala;
+    }
+
+    [System.Serializable]
+    public class RoomsWrapper
+    {
+        public SalaInfo[] rooms;
     }
 
     [System.Serializable]

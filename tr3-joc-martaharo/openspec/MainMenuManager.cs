@@ -13,8 +13,8 @@ using TMPro;
 
 public class MainMenuManager : MonoBehaviour
 {
-    // URL del servidor Node.js
-    private string urlServidor = "http://localhost:3000";
+
+private string urlServidor = "http://204.168.209.55/api/rooms"; 
 
     [Header("Panells del Menú")]
     public GameObject panellPrincipal;
