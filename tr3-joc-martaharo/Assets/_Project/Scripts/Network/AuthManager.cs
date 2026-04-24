@@ -5,6 +5,7 @@ using UnityEngine.Networking;
 using System.Collections;
 using System.Text;
 
+
 public class AuthManager : MonoBehaviour
 {
     [Header("Configuració de Connexió")]
@@ -136,7 +137,7 @@ private string urlServidor = "http://204.168.209.55:8080/api/auth";
 
     IEnumerator RegistreCoroutine(string usuari, string contrasenya)
     {
-        MostrarError("Creant compte...");
+        MostrarInfo("Creant compte...");
         
         string baseUrl = usarServidorRemot ? urlServidor : urlLocal;
         string fullUrl = baseUrl.TrimEnd('/') + "/register";
@@ -173,6 +174,10 @@ private string urlServidor = "http://204.168.209.55:8080/api/auth";
                 Debug.Log("Registre correcte! Benvingut/da: " + username);
                 
                 MostrarExit("Usuari creat correctament!");
+                
+                // Esperar un momento y cargar el menú para que no parezca bloqueado
+                yield return new WaitForSeconds(1.5f);
+                SceneManager.LoadScene("Menu");
                 
                 campUsuari.text = "";
                 campContrasenya.text = "";
@@ -212,6 +217,15 @@ private string urlServidor = "http://204.168.209.55:8080/api/auth";
         if (missatgeError != null)
         {
             missatgeError.color = Color.green;
+            missatgeError.text = missatge;
+        }
+    }
+
+    void MostrarInfo(string missatge)
+    {
+        if (missatgeError != null)
+        {
+            missatgeError.color = Color.white;
             missatgeError.text = missatge;
         }
     }
