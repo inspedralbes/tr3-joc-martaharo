@@ -41,6 +41,8 @@ function generateToken() {
 }
 
 const rooms = {};
+const roomCodes = {}; // Maps roomCode -> roomId
+const roomInfo = {}; // Maps roomId -> { roomId, roomCode, timestamp }
 const roomPositions = {};
 const roomEnemyPositions = {};
 const roomGoalStatus = {};
@@ -48,7 +50,12 @@ const hostPlayer = {};
 
 app.get('/api/rooms', (req, res) => {
   console.log('[ROUTE] GET /api/rooms');
-  res.json([]);
+  const activeRooms = Object.values(roomInfo).map(room => ({
+    id: room.roomId,
+    nom_sala: `Sala ${room.roomCode}`,
+    codi_sala: room.roomCode
+  }));
+  res.json(activeRooms);
 });
 
 app.post('/api/rooms', async (req, res) => {
@@ -57,6 +64,12 @@ app.post('/api/rooms', async (req, res) => {
   const roomId = crypto.randomBytes(12).toString('hex');
   
   rooms[roomId] = [];
+  roomInfo[roomId] = {
+    roomId: roomId,
+    roomCode: roomCode,
+    timestamp: Date.now()
+  };
+  roomCodes[roomCode] = roomId;
   
   res.status(200).json({
     success: true,
@@ -287,6 +300,11 @@ io.on('connection', (socket) => {
     }
 
     if (roomIdToCleanup) {
+      const room = roomInfo[roomIdToCleanup];
+      if (room) {
+        delete roomCodes[room.roomCode];
+      }
+      delete roomInfo[roomIdToCleanup];
       delete roomPositions[roomIdToCleanup];
       delete roomEnemyPositions[roomIdToCleanup];
       delete roomGoalStatus[roomIdToCleanup];
