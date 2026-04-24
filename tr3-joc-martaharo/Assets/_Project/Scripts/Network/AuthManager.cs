@@ -5,6 +5,11 @@ using UnityEngine.Networking;
 using System.Collections;
 using System.Text;
 
+// Clase para saltar validaciones de certificado (util en algunos builds)
+public class BypassCertificate : CertificateHandler
+{
+    protected override bool ValidateCertificate(byte[] certificateData) => true;
+}
 
 public class AuthManager : MonoBehaviour
 {
@@ -12,7 +17,7 @@ public class AuthManager : MonoBehaviour
     public bool usarServidorRemot = true; 
     
     private string urlLocal = "http://localhost/api/auth"; 
-private string urlServidor = "http://204.168.209.55:8080/api/auth";
+    private string urlServidor = "http://204.168.209.55:8080/api/auth";
 
     [Header("Formulari de Login")]
     public TMP_InputField campUsuari;
@@ -24,24 +29,16 @@ private string urlServidor = "http://204.168.209.55:8080/api/auth";
 
     public void FerLogin()
     {
-        Debug.Log(">>> EXECUTANT ACCIÓ <<<");
-        Debug.Log(">>> BOTÓN LOGIN CLICADO <<<");
-        
         string usuari = campUsuari.text;
         string contrasenya = campContrasenya.text;
 
-        if (string.IsNullOrEmpty(usuari))
+        if (string.IsNullOrEmpty(usuari) || string.IsNullOrEmpty(contrasenya))
         {
-            MostrarError("Escriu un nom d'usuari!");
+            MostrarError("Escriu usuari i contrasenya!");
             return;
         }
 
-        if (string.IsNullOrEmpty(contrasenya))
-        {
-            MostrarError("Escriu la contrasenya!");
-            return;
-        }
-
+        StopAllCoroutines();
         StartCoroutine(LoginCoroutine(usuari, contrasenya));
     }
 
@@ -52,90 +49,67 @@ private string urlServidor = "http://204.168.209.55:8080/api/auth";
 
         if (Application.internetReachability == NetworkReachability.NotReachable)
         {
-            MostrarError("No hi ha connexió a Internet!");
+            MostrarError("Sense conexión a internet!");
             yield break;
         }
 
         MostrarInfo("Connectant a: " + fullUrl);
-        Debug.Log(">>> INTENTANT LOGIN A: " + fullUrl);
-
-        LoginRequest peticio = new LoginRequest();
-        peticio.username = usuari;
-        peticio.password = contrasenya;
+        
+        LoginRequest peticio = new LoginRequest { username = usuari, password = contrasenya };
         string jsonData = JsonUtility.ToJson(peticio);
 
         using (UnityWebRequest www = new UnityWebRequest(fullUrl, "POST"))
         {
-            www.timeout = 60;
-            www.useHttpContinue = false;
-            
-            byte[] jsonToSend = new UTF8Encoding(true).GetBytes(jsonData);
-            www.uploadHandler = new UploadHandlerRaw(jsonToSend);
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonData);
+            www.uploadHandler = new UploadHandlerRaw(bodyRaw);
             www.downloadHandler = new DownloadHandlerBuffer();
+            www.certificateHandler = new BypassCertificate();
+            
             www.SetRequestHeader("Content-Type", "application/json");
-            www.SetRequestHeader("Accept", "application/json"); // Afegit per a compatibilitat total
+            www.SetRequestHeader("Accept", "application/json");
+            www.SetRequestHeader("User-Agent", "UnityGame/1.0");
 
-            yield return www.SendWebRequest();
+            // Timeout manual de 15 segundos
+            www.timeout = 15;
+            
+            UnityWebRequestAsyncOperation operation = www.SendWebRequest();
+
+            while (!operation.isDone)
+            {
+                yield return null;
+            }
 
             if (www.result == UnityWebRequest.Result.Success)
             {
-                string resposta = www.downloadHandler.text;
-                LoginResposta dadesResposta = JsonUtility.FromJson<LoginResposta>(resposta);
+                LoginResposta dades = JsonUtility.FromJson<LoginResposta>(www.downloadHandler.text);
+                token = dades.token;
+                username = dades.username;
 
-                token = dadesResposta.token;
-                username = dadesResposta.username;
-
-                Debug.Log("Login correcte! Benvingut/da: " + username);
-
-                MostrarExit("Sessió iniciada. Benvingut/da!");
+                MostrarExit("Benvingut/da " + username + "!");
+                yield return new WaitForSeconds(1f);
                 SceneManager.LoadScene("Menu");
             }
             else
             {
-                string respostaError = www.downloadHandler.text;
-                Debug.LogError($">>> ERROR TÉCNIC LOGIN: URL={fullUrl} | Codi={www.responseCode} | Error={www.error} | Reachability={Application.internetReachability}");
-                Debug.LogError($">>> COS DE LA RESPOSTA: {respostaError}");
-                
-                string errorMsg;
-                if (www.responseCode == 401)
-                {
-                    errorMsg = "Usuari o contrasenya incorrectes";
-                }
-                else
-                {
-                    errorMsg = "Error de connexió amb el servidor";
-                }
-
-                MostrarError(errorMsg);
+                Debug.LogError($"Error Login: {www.error} | Code: {www.responseCode}");
+                if (www.responseCode == 401) MostrarError("Usuari o contrasenya malament");
+                else MostrarError("Error de xarxa: " + (www.responseCode > 0 ? www.responseCode.ToString() : "Timeout"));
             }
         }
     }
 
     public void FerRegistre()
     {
-        Debug.Log(">>> EXECUTANT ACCIÓ <<<");
-        
         string usuari = campUsuari.text;
         string contrasenya = campContrasenya.text;
 
-        if (string.IsNullOrEmpty(usuari))
+        if (string.IsNullOrEmpty(usuari) || contrasenya.Length < 4)
         {
-            MostrarError("Escriu un nom d'usuari!");
+            MostrarError("Usuari buit o pass curta!");
             return;
         }
 
-        if (string.IsNullOrEmpty(contrasenya))
-        {
-            MostrarError("Escriu la contrasenya!");
-            return;
-        }
-
-        if (contrasenya.Length < 4)
-        {
-            MostrarError("La contrasenya ha de tenir 4 caràcters mínim.");
-            return;
-        }
-
+        StopAllCoroutines();
         StartCoroutine(RegistreCoroutine(usuari, contrasenya));
     }
 
@@ -144,69 +118,38 @@ private string urlServidor = "http://204.168.209.55:8080/api/auth";
         string baseUrl = usarServidorRemot ? urlServidor : urlLocal;
         string fullUrl = baseUrl.TrimEnd('/') + "/register";
 
-        if (Application.internetReachability == NetworkReachability.NotReachable)
-        {
-            MostrarError("No hi ha connexió a Internet!");
-            yield break;
-        }
-
         MostrarInfo("Creant compte a: " + fullUrl);
-        Debug.Log(">>> INTENTANT REGISTRE A: " + fullUrl);
-
-        LoginRequest peticio = new LoginRequest();
-        peticio.username = usuari;
-        peticio.password = contrasenya;
+        
+        LoginRequest peticio = new LoginRequest { username = usuari, password = contrasenya };
         string jsonData = JsonUtility.ToJson(peticio);
 
         using (UnityWebRequest www = new UnityWebRequest(fullUrl, "POST"))
         {
-            www.timeout = 60;
-            www.useHttpContinue = false;
-            
-            byte[] jsonToSend = new UTF8Encoding(true).GetBytes(jsonData);
-            www.uploadHandler = new UploadHandlerRaw(jsonToSend);
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonData);
+            www.uploadHandler = new UploadHandlerRaw(bodyRaw);
             www.downloadHandler = new DownloadHandlerBuffer();
+            www.certificateHandler = new BypassCertificate();
+
             www.SetRequestHeader("Content-Type", "application/json");
             www.SetRequestHeader("Accept", "application/json");
 
+            www.timeout = 15;
             yield return www.SendWebRequest();
 
             if (www.result == UnityWebRequest.Result.Success)
             {
-                string resposta = www.downloadHandler.text;
-                LoginResposta dadesResposta = JsonUtility.FromJson<LoginResposta>(resposta);
+                LoginResposta dades = JsonUtility.FromJson<LoginResposta>(www.downloadHandler.text);
+                token = dades.token;
+                username = dades.username;
 
-                token = dadesResposta.token;
-                username = dadesResposta.username;
-
-                Debug.Log("Registre correcte! Benvingut/da: " + username);
-                
-                MostrarExit("Usuari creat correctament!");
-                
-                // Esperar un momento y cargar el menú para que no parezca bloqueado
+                MostrarExit("Compte creat. Entrant...");
                 yield return new WaitForSeconds(1.5f);
                 SceneManager.LoadScene("Menu");
-                
-                campUsuari.text = "";
-                campContrasenya.text = "";
             }
             else
             {
-                string respostaError = www.downloadHandler.text;
-                Debug.LogError($">>> ERROR TÉCNIC REGISTRE: URL={fullUrl} | Codi={www.responseCode} | Error={www.error} | Reachability={Application.internetReachability}");
-                Debug.LogError($">>> COS DE LA RESPOSTA: {respostaError}");
-                
-                string errorMsg;
-                if (www.responseCode == 409)
-                {
-                    errorMsg = "Aquest usuari ja existeix";
-                }
-                else
-                {
-                    errorMsg = "Error de connexió amb el servidor";
-                }
-
-                MostrarError(errorMsg);
+                if (www.responseCode == 409) MostrarError("L'usuari ja existeix");
+                else MostrarError("Error de xarxa: " + (www.responseCode > 0 ? www.responseCode.ToString() : "Error"));
             }
         }
     }
@@ -246,16 +189,8 @@ private string urlServidor = "http://204.168.209.55:8080/api/auth";
     }
 
     [System.Serializable]
-    public class LoginRequest
-    {
-        public string username;
-        public string password;
-    }
+    public class LoginRequest { public string username; public string password; }
 
     [System.Serializable]
-    public class LoginResposta
-    {
-        public string token;
-        public string username;
-    }
+    public class LoginResposta { public string token; public string username; }
 }
