@@ -2124,6 +2124,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 21e2b6db90e4f8d18bb99826630cc68a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  usarServidorRemot: 1
+  urlLocal: http://localhost:3000/api/auth
+  urlServidor: http://204.168.209.55:8080/api/auth
   campUsuari: {fileID: 1258752479}
   campContrasenya: {fileID: 1360163834}
   missatgeError: {fileID: 226644982}
