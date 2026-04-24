@@ -4,6 +4,7 @@ using System.Collections;
 
 public class NetworkAutoStarter : MonoBehaviour
 {
+    
     public GameObject networkManagerPrefab;
 
     IEnumerator Start()

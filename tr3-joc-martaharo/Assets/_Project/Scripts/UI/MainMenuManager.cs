@@ -18,7 +18,7 @@ public class MainMenuManager : MonoBehaviour
     // URL del servidor Node.js
     [Header("Configuración del Servidor")]
     public string urlServidor = "http://204.168.209.55";
-    public string puertoServidor = "3000";
+    public string puertoServidor = "8080";
 
     [Header("Panells del Menú")]
     public GameObject panellPrincipal;
@@ -54,10 +54,17 @@ public class MainMenuManager : MonoBehaviour
     async void ConnectarSocketPerErrors()
     {
         string urlLimpia = urlServidor.Trim().TrimEnd('/');
+        if (!urlLimpia.StartsWith("http://") && !urlLimpia.StartsWith("https://"))
+        {
+            urlLimpia = "http://" + urlLimpia;
+        }
         if (!string.IsNullOrEmpty(puertoServidor))
         {
             urlLimpia = urlLimpia + ":" + puertoServidor;
         }
+        
+        Debug.Log("[SocketIO] URL final de conexion: " + urlLimpia);
+        
         socketClient = new SocketIO(urlLimpia);
         
         socketClient.On("joinError", response => {
@@ -126,19 +133,18 @@ public class MainMenuManager : MonoBehaviour
         missatgeCrear.text = "Creant sala...";
         missatgeCrear.color = Color.white;
 
-        // URL de Seguridad: Trim y eliminar '/' final
         string urlBase = urlServidor.Trim().TrimEnd('/');
+        if (!urlBase.StartsWith("http://") && !urlBase.StartsWith("https://"))
+        {
+            urlBase = "http://" + urlBase;
+        }
         if (!string.IsNullOrEmpty(puertoServidor))
         {
             urlBase = urlBase + ":" + puertoServidor;
         }
         string url = urlBase + "/api/rooms";
-
-        // Debug de Headers
-        Debug.Log("===========================================");
-        Debug.Log("[MainMenuManager] Enviando POST a: " + url);
-        Debug.Log("[MainMenuManager] urlServidor original: " + urlServidor);
-        Debug.Log("[MainMenuManager] urlBase limpia: " + urlBase);
+        
+        Debug.Log("[CrearSala] URL final: " + url);
         
         if (AuthManager.token != null && AuthManager.token != "")
         {
@@ -269,6 +275,7 @@ public class MainMenuManager : MonoBehaviour
             urlBase = urlBase + ":" + puertoServidor;
         }
         string url = urlBase + "/api/rooms";
+        Debug.Log("Intentant connectar a: " + url);
 
         Debug.Log("[MainMenuManager] Buscando sala con código: " + codi);
 
