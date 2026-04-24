@@ -79,8 +79,8 @@ app.post('/api/rooms', async (req, res) => {
 });
 
 app.post('/api/auth/register', async (req, res) => {
-  console.log('[ROUTE] POST /api/auth/register');
   const { username, password } = req.body;
+  console.log(`[AUTH] Solicitud de registro recibida para: ${username}`);
   
   if (!username || !password) {
     return res.status(400).json({ success: false, error: 'Faltan datos' });
