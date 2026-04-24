@@ -47,14 +47,18 @@ private string urlServidor = "http://204.168.209.55:8080/api/auth";
 
     IEnumerator LoginCoroutine(string usuari, string contrasenya)
     {
-        MostrarError("Connectant...");
-        
         string baseUrl = usarServidorRemot ? urlServidor : urlLocal;
         string fullUrl = baseUrl.TrimEnd('/') + "/login";
-        
+
+        if (Application.internetReachability == NetworkReachability.NotReachable)
+        {
+            MostrarError("No hi ha connexió a Internet!");
+            yield break;
+        }
+
+        MostrarInfo("Connectant a: " + fullUrl);
         Debug.Log(">>> INTENTANT LOGIN A: " + fullUrl);
 
-        // Definició correcta del jsonData abans del seu ús
         LoginRequest peticio = new LoginRequest();
         peticio.username = usuari;
         peticio.password = contrasenya;
@@ -137,14 +141,18 @@ private string urlServidor = "http://204.168.209.55:8080/api/auth";
 
     IEnumerator RegistreCoroutine(string usuari, string contrasenya)
     {
-        MostrarInfo("Creant compte...");
-        
         string baseUrl = usarServidorRemot ? urlServidor : urlLocal;
         string fullUrl = baseUrl.TrimEnd('/') + "/register";
-        
+
+        if (Application.internetReachability == NetworkReachability.NotReachable)
+        {
+            MostrarError("No hi ha connexió a Internet!");
+            yield break;
+        }
+
+        MostrarInfo("Creant compte a: " + fullUrl);
         Debug.Log(">>> INTENTANT REGISTRE A: " + fullUrl);
 
-        // Definició correcta del jsonData abans del seu ús
         LoginRequest peticio = new LoginRequest();
         peticio.username = usuari;
         peticio.password = contrasenya;
