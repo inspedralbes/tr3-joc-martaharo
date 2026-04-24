@@ -5,159 +5,102 @@ using UnityEngine.Networking;
 using System.Collections;
 using System.Text;
 
-// Clase para saltar validaciones de certificado (util en algunos builds)
-public class BypassCertificate : CertificateHandler
-{
-    protected override bool ValidateCertificate(byte[] certificateData) => true;
-}
-
 public class AuthManager : MonoBehaviour
 {
     [Header("Configuració de Connexió")]
     public bool usarServidorRemot = true; 
     
-    private string urlLocal = "http://localhost/api/auth"; 
-    private string urlServidor = "http://204.168.209.55:8080/api/auth";
+    [SerializeField] private string urlLocal = "http://localhost/api/auth"; 
+    [SerializeField] private string urlServidor = "http://204.168.209.55:8080/api/auth";
 
     [Header("Formulari de Login")]
     public TMP_InputField campUsuari;
     public TMP_InputField campContrasenya;
     public TextMeshProUGUI missatgeError;
 
+    // Token y username accesibles globalmente
     public static string token { get; private set; }
     public static string username { get; private set; }
 
     public void FerLogin()
     {
-        string usuari = campUsuari.text;
-        string contrasenya = campContrasenya.text;
+        string u = campUsuari.text.Trim();
+        string p = campContrasenya.text.Trim();
 
-        if (string.IsNullOrEmpty(usuari) || string.IsNullOrEmpty(contrasenya))
+        if (string.IsNullOrEmpty(u) || string.IsNullOrEmpty(p))
         {
-            MostrarError("Escriu usuari i contrasenya!");
+            MostrarError("Falten dades!");
             return;
         }
 
         StopAllCoroutines();
-        StartCoroutine(LoginCoroutine(usuari, contrasenya));
-    }
-
-    IEnumerator LoginCoroutine(string usuari, string contrasenya)
-    {
-        string baseUrl = usarServidorRemot ? urlServidor : urlLocal;
-        string fullUrl = baseUrl.TrimEnd('/') + "/login";
-
-        if (Application.internetReachability == NetworkReachability.NotReachable)
-        {
-            MostrarError("Sense conexión a internet!");
-            yield break;
-        }
-
-        MostrarInfo("Connectant a: " + fullUrl);
-        
-        LoginRequest peticio = new LoginRequest { username = usuari, password = contrasenya };
-        string jsonData = JsonUtility.ToJson(peticio);
-
-        using (UnityWebRequest www = new UnityWebRequest(fullUrl, "POST"))
-        {
-            byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonData);
-            www.uploadHandler = new UploadHandlerRaw(bodyRaw);
-            www.downloadHandler = new DownloadHandlerBuffer();
-            www.certificateHandler = new BypassCertificate();
-            
-            www.SetRequestHeader("Content-Type", "application/json");
-            www.SetRequestHeader("Accept", "application/json");
-            www.SetRequestHeader("User-Agent", "UnityGame/1.0");
-
-            // Timeout manual de 15 segundos
-            www.timeout = 15;
-            
-            UnityWebRequestAsyncOperation operation = www.SendWebRequest();
-
-            while (!operation.isDone)
-            {
-                yield return null;
-            }
-
-            if (www.result == UnityWebRequest.Result.Success)
-            {
-                LoginResposta dades = JsonUtility.FromJson<LoginResposta>(www.downloadHandler.text);
-                token = dades.token;
-                username = dades.username;
-
-                MostrarExit("Benvingut/da " + username + "!");
-                yield return new WaitForSeconds(1f);
-                SceneManager.LoadScene("Menu");
-            }
-            else
-            {
-                Debug.LogError($"Error Login: {www.error} | Code: {www.responseCode}");
-                if (www.responseCode == 401) MostrarError("Usuari o contrasenya malament");
-                else MostrarError("Error de xarxa: " + (www.responseCode > 0 ? www.responseCode.ToString() : "Timeout"));
-            }
-        }
+        StartCoroutine(ExecutarPeticio(u, p, "/login"));
     }
 
     public void FerRegistre()
     {
-        string usuari = campUsuari.text;
-        string contrasenya = campContrasenya.text;
+        string u = campUsuari.text.Trim();
+        string p = campContrasenya.text.Trim();
 
-        if (string.IsNullOrEmpty(usuari) || contrasenya.Length < 4)
+        if (string.IsNullOrEmpty(u) || p.Length < 4)
         {
             MostrarError("Usuari buit o pass curta!");
             return;
         }
 
         StopAllCoroutines();
-        StartCoroutine(RegistreCoroutine(usuari, contrasenya));
+        StartCoroutine(ExecutarPeticio(u, p, "/register"));
     }
 
-    IEnumerator RegistreCoroutine(string usuari, string contrasenya)
+    IEnumerator ExecutarPeticio(string usuari, string contrasenya, string endpoint)
     {
         string baseUrl = usarServidorRemot ? urlServidor : urlLocal;
-        string fullUrl = baseUrl.TrimEnd('/') + "/register";
+        string fullUrl = baseUrl.TrimEnd('/') + endpoint;
 
-        MostrarInfo("Creant compte a: " + fullUrl);
+        MostrarInfo("Connectant...");
         
-        LoginRequest peticio = new LoginRequest { username = usuari, password = contrasenya };
-        string jsonData = JsonUtility.ToJson(peticio);
+        LoginRequest dadesPeticio = new LoginRequest { username = usuari, password = contrasenya };
+        string jsonData = JsonUtility.ToJson(dadesPeticio);
 
-        using (UnityWebRequest www = new UnityWebRequest(fullUrl, "POST"))
+        // CREACIÓN DE LA PETICIÓN (MÉTODO MÁS ROBUSTO PARA BUILDS)
+        UnityWebRequest www = new UnityWebRequest(fullUrl, "POST");
+        byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonData);
+        www.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        www.downloadHandler = new DownloadHandlerBuffer();
+        www.SetRequestHeader("Content-Type", "application/json");
+        www.timeout = 10; // 10 segundos máximo
+
+        yield return www.SendWebRequest();
+
+        if (www.result == UnityWebRequest.Result.Success)
         {
-            byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonData);
-            www.uploadHandler = new UploadHandlerRaw(bodyRaw);
-            www.downloadHandler = new DownloadHandlerBuffer();
-            www.certificateHandler = new BypassCertificate();
+            try {
+                LoginResposta resposta = JsonUtility.FromJson<LoginResposta>(www.downloadHandler.text);
+                token = resposta.token;
+                username = resposta.username;
 
-            www.SetRequestHeader("Content-Type", "application/json");
-            www.SetRequestHeader("Accept", "application/json");
-
-            www.timeout = 15;
-            yield return www.SendWebRequest();
-
-            if (www.result == UnityWebRequest.Result.Success)
-            {
-                LoginResposta dades = JsonUtility.FromJson<LoginResposta>(www.downloadHandler.text);
-                token = dades.token;
-                username = dades.username;
-
-                MostrarExit("Compte creat. Entrant...");
-                yield return new WaitForSeconds(1.5f);
+                MostrarExit("Correcte! Entrant...");
+                yield return new WaitForSeconds(1f);
                 SceneManager.LoadScene("Menu");
-            }
-            else
-            {
-                if (www.responseCode == 409) MostrarError("L'usuari ja existeix");
-                else MostrarError("Error de xarxa: " + (www.responseCode > 0 ? www.responseCode.ToString() : "Error"));
+            } catch {
+                MostrarError("Error processant resposta del servidor");
             }
         }
+        else
+        {
+            // MANEJO DE ERRORES ESPECÍFICOS
+            if (www.responseCode == 401) MostrarError("Usuari o password incorrectes");
+            else if (www.responseCode == 409) MostrarError("L'usuari ja existeix");
+            else if (www.result == UnityWebRequest.Result.ConnectionError) MostrarError("Error de xarxa: Comprova el Firewall");
+            else MostrarError("Error: " + (www.responseCode > 0 ? "Servidor Down (" + www.responseCode + ")" : "Timeout/No Internet"));
+        }
+        
+        www.Dispose();
     }
 
     void MostrarError(string missatge)
     {
-        if (missatgeError != null)
-        {
+        if (missatgeError != null) {
             missatgeError.color = Color.red;
             missatgeError.text = missatge;
         }
@@ -165,8 +108,7 @@ public class AuthManager : MonoBehaviour
 
     void MostrarExit(string missatge)
     {
-        if (missatgeError != null)
-        {
+        if (missatgeError != null) {
             missatgeError.color = Color.green;
             missatgeError.text = missatge;
         }
@@ -174,18 +116,10 @@ public class AuthManager : MonoBehaviour
 
     void MostrarInfo(string missatge)
     {
-        if (missatgeError != null)
-        {
+        if (missatgeError != null) {
             missatgeError.color = Color.white;
             missatgeError.text = missatge;
         }
-    }
-
-    public void TancarSessio()
-    {
-        token = null;
-        username = null;
-        SceneManager.LoadScene("Login");
     }
 
     [System.Serializable]
