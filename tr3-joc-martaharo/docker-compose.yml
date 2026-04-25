@@ -24,10 +24,10 @@ services:
     env_file:        
       - server/.env
     environment:
-      - NODE_ENV=production
+      - MONGO_URL=mongodb+srv://Marta:Samanthaharo@projectemongo.kdmnf8d.mongodb.net/joc_multijugador?retryWrites=true&w=majority&appName=ProjecteMongo
       - PORT=3000
     depends_on:
-      - joc-mongodb
+      - joc-nginx # Eliminamos la dependencia de mongodb local
     networks:
       - joc-network
     restart: unless-stopped
