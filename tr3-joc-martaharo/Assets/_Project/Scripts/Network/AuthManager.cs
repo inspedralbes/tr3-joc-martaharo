@@ -40,6 +40,8 @@ public class AuthManager : MonoBehaviour
 
         string baseUrl = usarServidorRemot ? urlServidor : urlLocal;
         string fullUrl = baseUrl.TrimEnd('/') + endpoint;
+        
+        MostrarInfo("A: " + fullUrl); // Mensaje de depuración para el usuario
         string jsonData = JsonUtility.ToJson(new LoginRequest { username = u, password = p });
 
         using (UnityWebRequest www = new UnityWebRequest(fullUrl, "POST"))
