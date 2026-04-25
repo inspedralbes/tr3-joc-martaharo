@@ -2935,8 +2935,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 833a6c0e4310e74d7b705f8942092fb4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  urlServidor: 204.168.209.55
-  puertoServidor: 8080
+  urlServidor: http://204.168.209.55
+  puertoServidor: 3000
   panellPrincipal: {fileID: 2080449158}
   panellCrearSala: {fileID: 1336548550}
   panellUnirSala: {fileID: 684236920}
