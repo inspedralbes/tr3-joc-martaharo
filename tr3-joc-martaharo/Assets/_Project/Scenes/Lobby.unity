@@ -404,7 +404,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3896729592618374520, guid: 829b20449daf7cab3ac4dedbd9e78c93, type: 3}
       propertyPath: ConnectionData.Port
-      value: 7779
+      value: 7778
       objectReference: {fileID: 0}
     - target: {fileID: 3896729592618374520, guid: 829b20449daf7cab3ac4dedbd9e78c93, type: 3}
       propertyPath: m_DisconnectTimeoutMS

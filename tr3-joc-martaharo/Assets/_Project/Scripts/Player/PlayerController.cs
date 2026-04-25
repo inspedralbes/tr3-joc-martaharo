@@ -66,8 +66,9 @@ public class PlayerController : NetworkBehaviour
 
         if (!IsServer) return;
 
-        // Assignar el nom d'usuari des de l'AuthManager
-        username.Value = (FixedString32Bytes)AuthManager.username;
+        // Assignar el nom d'usuari des de l'AuthManager (SEGUR)
+        string nomSegur = !string.IsNullOrEmpty(AuthManager.username) ? AuthManager.username : "Ocell_" + OwnerClientId;
+        username.Value = (FixedString32Bytes)nomSegur;
 
         startTime.Value = Time.time;
 
@@ -234,7 +235,8 @@ public class PlayerController : NetworkBehaviour
         string json = JsonUtility.ToJson(data);
         Debug.Log("[RANKING] Enviant rànquing: " + json);
 
-        using (UnityWebRequest req = new UnityWebRequest("http://localhost:3000/api/rankings", "POST"))
+        string urlRanking = "http://204.168.209.55:3000/api/rankings";
+        using (UnityWebRequest req = new UnityWebRequest(urlRanking, "POST"))
         {
             byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
             req.uploadHandler = new UploadHandlerRaw(bodyRaw);

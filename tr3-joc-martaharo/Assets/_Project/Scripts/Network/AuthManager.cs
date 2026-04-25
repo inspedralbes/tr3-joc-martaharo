@@ -58,8 +58,10 @@ public class AuthManager : MonoBehaviour
                 if (resRaw.Contains("token")) {
                     LoginResposta res = JsonUtility.FromJson<LoginResposta>(resRaw);
                     token = res.token;
-                    username = res.username;
-                    ActualitzarUI("¡Dins!", Color.green);
+                    // Aseguramos que el nombre no sea nulo para evitar el crash del Lobby
+                    username = !string.IsNullOrEmpty(res.username) ? res.username : u;
+                    
+                    ActualitzarUI("¡Correcte!", Color.green);
                     yield return new WaitForSeconds(0.8f);
                     SceneManager.LoadScene("Menu");
                 } else {

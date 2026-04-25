@@ -519,7 +519,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 2058102691}
         m_TargetAssemblyTypeName: MainMenuManager, Assembly-CSharp
-        m_MethodName: CrearSalaMultiplayer
+        m_MethodName: ActivarPanelesMultiplayer
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -1483,7 +1483,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 684236920}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -1495,7 +1495,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -1.5, y: -150}
+  m_AnchoredPosition: {x: -1.5, y: -149.99997}
   m_SizeDelta: {x: 600, y: 350}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &684236923
@@ -2145,7 +2145,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 2058102691}
         m_TargetAssemblyTypeName: MainMenuManager, Assembly-CSharp
-        m_MethodName: JugarSol
+        m_MethodName: SeleccionarIndividual
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2278,7 +2278,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 2058102691}
         m_TargetAssemblyTypeName: MainMenuManager, Assembly-CSharp
-        m_MethodName: ConfirmarUnirSala
+        m_MethodName: BotonUnirDefinitivo
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2488,7 +2488,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1336548550}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -2764,7 +2764,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 2058102691}
         m_TargetAssemblyTypeName: MainMenuManager, Assembly-CSharp
-        m_MethodName: ConfirmarCrearSala
+        m_MethodName: BotonCrearDefinitivo
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2935,15 +2935,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 833a6c0e4310e74d7b705f8942092fb4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  urlServidor: http://204.168.209.55
-  puertoServidor: 3000
-  panellPrincipal: {fileID: 2080449158}
-  panellCrearSala: {fileID: 1336548550}
-  panellUnirSala: {fileID: 684236920}
-  textCodiSala: {fileID: 668666267}
-  missatgeCrear: {fileID: 879438322}
-  campCodiSala: {fileID: 15147296}
-  missatgeUnir: {fileID: 1346928000}
+  PanellPrincipal: {fileID: 2080449158}
+  PanellCrear: {fileID: 1336548550}
+  PanellUnir: {fileID: 684236920}
+  TextCodi: {fileID: 668666267}
+  InputCodigo: {fileID: 15147296}
 --- !u!1 &2080449158
 GameObject:
   m_ObjectHideFlags: 0
