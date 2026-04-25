@@ -2126,7 +2126,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   usarServidorRemot: 1
   urlLocal: http://localhost:3000/api/auth
-  urlServidor: http://204.168.209.55:8080/api/auth
+  urlServidor: http://204.168.209.55/api/auth
   campUsuari: {fileID: 1258752479}
   campContrasenya: {fileID: 1360163834}
   missatgeError: {fileID: 226644982}
