@@ -9,7 +9,6 @@ public class AuthManager : MonoBehaviour
 {
     [Header("Configuració de Connexió")]
     public bool usarServidorRemot = true; 
-    
     [SerializeField] private string urlLocal = "http://localhost:3000/api/auth"; 
     [SerializeField] private string urlServidor = "http://204.168.209.55/api/auth";
 
@@ -21,15 +20,37 @@ public class AuthManager : MonoBehaviour
     public static string token { get; private set; }
     public static string username { get; private set; }
 
-    public void FerLogin() { ValidarIExecutar("/login"); }
-    public void FerRegistre() { ValidarIExecutar("/register"); }
+    private void Start() {
+        Debug.Log(">>> AuthManager Iniciat i a l'espera...");
+        MostrarInfo("Esperant dades..."); 
+    }
+
+    public void FerLogin() { 
+        Debug.Log(">>> BOTÓ LOGIN PREMUT!");
+        ValidarIExecutar("/login"); 
+    }
+    
+    public void FerRegistre() { 
+        Debug.Log(">>> BOTÓ REGISTRE PREMUT!");
+        ValidarIExecutar("/register"); 
+    }
 
     private void ValidarIExecutar(string endpoint)
     {
-        string u = campUsuari.text.Trim();
-        string p = campContrasenya.text.Trim();
-        if (string.IsNullOrEmpty(u) || string.IsNullOrEmpty(p)) { MostrarError("Falten dades!"); return; }
-        
+        // Forzamos el mensaje antes de cualquier otra lógica
+        if (missatgeError) {
+            missatgeError.color = Color.yellow;
+            missatgeError.text = "Processant clic...";
+        }
+
+        string u = campUsuari != null ? campUsuari.text.Trim() : "";
+        string p = campContrasenya != null ? campContrasenya.text.Trim() : "";
+
+        if (string.IsNullOrEmpty(u) || string.IsNullOrEmpty(p)) {
+            MostrarError("Falten dades!");
+            return;
+        }
+
         StopAllCoroutines();
         StartCoroutine(PeticioFinal(u, p, endpoint));
     }
@@ -39,7 +60,8 @@ public class AuthManager : MonoBehaviour
         string baseUrl = usarServidorRemot ? urlServidor : urlLocal;
         string fullUrl = baseUrl.TrimEnd('/') + ep;
 
-        MostrarInfo("Connectant a: " + fullUrl);
+        Debug.Log(">>> LANZANDO PETIICIÓN A: " + fullUrl);
+        MostrarInfo("Intentant connectar a " + fullUrl);
         
         string jsonData = JsonUtility.ToJson(new LoginRequest { username = u, password = p });
         byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonData);
@@ -57,35 +79,23 @@ public class AuthManager : MonoBehaviour
             while (!op.isDone)
             {
                 float transcorregut = Time.realtimeSinceStartup - inici;
-                MostrarInfo($"Esperant... {transcorregut:F1}s");
-                
-                if (transcorregut > 25f) {
-                    MostrarError("TIMEOUT FORÇAT (Windows Bloqueja)");
-                    www.Abort();
-                    yield break;
-                }
+                MostrarInfo($"Esperant resposta... {transcorregut:F1}s");
                 yield return null;
             }
 
             if (www.result == UnityWebRequest.Result.Success)
             {
-                string resRaw = www.downloadHandler.text;
-                if (resRaw.Contains("token")) {
-                    LoginResposta res = JsonUtility.FromJson<LoginResposta>(resRaw);
-                    token = res.token;
-                    username = res.username;
-                    MostrarExit("¡Correcte! Entrant...");
-                    yield return new WaitForSeconds(1f);
-                    SceneManager.LoadScene("Menu");
-                } else {
-                    MostrarError("Error en dades del servidor");
-                }
+                LoginResposta res = JsonUtility.FromJson<LoginResposta>(www.downloadHandler.text);
+                token = res.token;
+                username = res.username;
+                MostrarExit("¡Correcte!");
+                yield return new WaitForSeconds(1f);
+                SceneManager.LoadScene("Menu");
             }
             else
             {
-                Debug.LogError($">>> ERROR {ep}: {www.error}");
-                if (www.responseCode == 401) MostrarError("Usuari/Pass incorrectes");
-                else MostrarError("Error Xarxa: " + (www.responseCode > 0 ? www.responseCode.ToString() : www.error));
+                Debug.LogError($">>> ERROR XARXA: {www.error}");
+                MostrarError("Error: " + (www.responseCode > 0 ? www.responseCode.ToString() : www.error));
             }
         }
     }
