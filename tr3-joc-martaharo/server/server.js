@@ -122,7 +122,7 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 const server = http.createServer(app);
-const io = new Server(server, { wsEngine: 'ws', cors: { origin: '*' } });
+const io = new Server(server, { cors: { origin: '*' } });
 
 // --- SOCKETS ---
 
