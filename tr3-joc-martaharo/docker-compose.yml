@@ -1,33 +1,19 @@
 version: '3.8'
 
 services:
-  # Servei Base de Dades - MongoDB
-  joc-mongodb:
-    image: mongo:latest
-    container_name: joc-mongodb
-    ports:
-      - "27017:27017" # Expost per si vols fer debug des de fora
-    volumes:
-      - mongodb_data:/data/db
-    networks:
-      - joc-network
-    restart: unless-stopped
-
-  # Servei Backend - Node.js
+  # Servei Backend - Node.js (Connectat a Atlas Cloud)
   joc-backend:
     build:
       context: ./server
       dockerfile: Dockerfile
     container_name: joc-backend
     ports:
-      - "3000:3000" # Expost directament com a fallback
+      - "3000:3000" 
     env_file:        
       - server/.env
     environment:
       - MONGO_URL=mongodb+srv://Marta:Samanthaharo@projectemongo.kdmnf8d.mongodb.net/joc_multijugador?retryWrites=true&w=majority&appName=ProjecteMongo
       - PORT=3000
-    depends_on:
-      - joc-nginx # Eliminamos la dependencia de mongodb local
     networks:
       - joc-network
     restart: unless-stopped
@@ -37,7 +23,7 @@ services:
     image: nginx:latest
     container_name: joc-nginx
     ports:
-      - "80:8080" # Port principal de comunicació
+      - "80:8080" 
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
@@ -49,6 +35,3 @@ services:
 networks:
   joc-network:
     driver: bridge
-
-volumes:
-  mongodb_data:
