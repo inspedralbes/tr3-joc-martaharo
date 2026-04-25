@@ -27,7 +27,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true }
 });
 
-const User = mongoose.model('User', userSchema);
+const User = mongoose.model('User', userSchema, 'usuaris');
 
 function generateRoomCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
