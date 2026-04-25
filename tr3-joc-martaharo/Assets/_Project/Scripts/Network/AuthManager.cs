@@ -10,7 +10,7 @@ public class AuthManager : MonoBehaviour
     [Header("Configuració de Connexió")]
     public bool usarServidorRemot = true; 
     [SerializeField] private string urlLocal = "http://localhost:3000/api/auth"; 
-    [SerializeField] private string urlServidor = "http://204.168.209.55/api/auth";
+    [SerializeField] private string urlServidor = "http://204.168.209.55:3000/api/auth";
 
     [Header("Formulari de Login")]
     public TMP_InputField campUsuari;
@@ -20,39 +20,22 @@ public class AuthManager : MonoBehaviour
     public static string token { get; private set; }
     public static string username { get; private set; }
 
-    private void Start() {
-        Debug.Log(">>> AuthManager Iniciat i a l'espera...");
-        MostrarInfo("Esperant dades..."); 
-    }
-
-    public void FerLogin() { 
-        Debug.Log(">>> BOTÓ LOGIN PREMUT!");
-        ValidarIExecutar("/login"); 
-    }
-    
-    public void FerRegistre() { 
-        Debug.Log(">>> BOTÓ REGISTRE PREMUT!");
-        ValidarIExecutar("/register"); 
-    }
+    public void FerLogin() { ValidarIExecutar("/login"); }
+    public void FerRegistre() { ValidarIExecutar("/register"); }
 
     private void ValidarIExecutar(string endpoint)
     {
-        // Forzamos el mensaje antes de cualquier otra lógica
-        if (missatgeError) {
-            missatgeError.color = Color.yellow;
-            missatgeError.text = "Processant clic...";
-        }
-
-        string u = campUsuari != null ? campUsuari.text.Trim() : "";
-        string p = campContrasenya != null ? campContrasenya.text.Trim() : "";
-
-        if (string.IsNullOrEmpty(u) || string.IsNullOrEmpty(p)) {
-            MostrarError("Falten dades!");
-            return;
-        }
+        string u = campUsuari.text.Trim();
+        string p = campContrasenya.text.Trim();
+        if (string.IsNullOrEmpty(u) || string.IsNullOrEmpty(p)) { MostrarError("Falten dades!"); return; }
 
         StopAllCoroutines();
         StartCoroutine(PeticioFinal(u, p, endpoint));
+    }
+
+    // Clase interna para saltar cualquier restricción de certificado en Builds
+    public class BypassCertificate : CertificateHandler {
+        protected override bool ValidateCertificate(byte[] certificateData) => true;
     }
 
     IEnumerator PeticioFinal(string u, string p, string ep)
@@ -60,8 +43,7 @@ public class AuthManager : MonoBehaviour
         string baseUrl = usarServidorRemot ? urlServidor : urlLocal;
         string fullUrl = baseUrl.TrimEnd('/') + ep;
 
-        Debug.Log(">>> LANZANDO PETIICIÓN A: " + fullUrl);
-        MostrarInfo("Intentant connectar a " + fullUrl);
+        MostrarInfo("Connectant a " + fullUrl + "...");
         
         string jsonData = JsonUtility.ToJson(new LoginRequest { username = u, password = p });
         byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonData);
@@ -70,32 +52,45 @@ public class AuthManager : MonoBehaviour
         {
             www.uploadHandler = new UploadHandlerRaw(bodyRaw);
             www.downloadHandler = new DownloadHandlerBuffer();
+            
+            // CONFIGURACIÓN DE EMERGENCIA
+            www.certificateHandler = new BypassCertificate();
             www.SetRequestHeader("Content-Type", "application/json");
-            www.timeout = 20;
+            www.SetRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"); // Engañar a firewalls
+            www.timeout = 15;
 
             var op = www.SendWebRequest();
-            float inici = Time.realtimeSinceStartup;
+            float timer = 0;
 
             while (!op.isDone)
             {
-                float transcorregut = Time.realtimeSinceStartup - inici;
-                MostrarInfo($"Esperant resposta... {transcorregut:F1}s");
+                timer += Time.deltaTime;
+                MostrarInfo($"Esperant resposta... {timer:F1}s");
                 yield return null;
             }
 
             if (www.result == UnityWebRequest.Result.Success)
             {
-                LoginResposta res = JsonUtility.FromJson<LoginResposta>(www.downloadHandler.text);
-                token = res.token;
-                username = res.username;
-                MostrarExit("¡Correcte!");
-                yield return new WaitForSeconds(1f);
-                SceneManager.LoadScene("Menu");
+                string resRaw = www.downloadHandler.text;
+                if (resRaw.Contains("token") || resRaw.Contains("success\":true")) {
+                    LoginResposta res = JsonUtility.FromJson<LoginResposta>(resRaw);
+                    token = res.token;
+                    username = res.username;
+                    MostrarExit("¡Dins! Carregant...");
+                    yield return new WaitForSeconds(0.8f);
+                    SceneManager.LoadScene("Menu");
+                } else {
+                    MostrarError("Error del servidor: " + resRaw);
+                }
             }
             else
             {
-                Debug.LogError($">>> ERROR XARXA: {www.error}");
-                MostrarError("Error: " + (www.responseCode > 0 ? www.responseCode.ToString() : www.error));
+                // Si llegamos aquí con un responseCode > 0, es que hay conexión pero error de lógica
+                if (www.responseCode == 401 || www.responseCode == 404) MostrarError("Usuari/Pass incorrectes");
+                else if (www.responseCode == 409) MostrarError("L'usuari ja existeix");
+                else MostrarError("Error Xarxa: " + (www.responseCode > 0 ? www.responseCode.ToString() : www.error));
+                
+                Debug.LogWarning("Respuesta fallida: " + www.downloadHandler.text);
             }
         }
     }
@@ -105,5 +100,5 @@ public class AuthManager : MonoBehaviour
     void MostrarInfo(string m) { if (missatgeError) { missatgeError.color = Color.white; missatgeError.text = m; } }
 
     [System.Serializable] public class LoginRequest { public string username; public string password; }
-    [System.Serializable] public class LoginResposta { public string token; public string username; }
+    [System.Serializable] public class LoginResposta { public string token; public string username; public string success; }
 }
