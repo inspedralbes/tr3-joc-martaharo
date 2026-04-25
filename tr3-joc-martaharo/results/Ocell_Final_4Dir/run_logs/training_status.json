@@ -1,0 +1,29 @@
+{
+    "IA_Enemy_Perseguidor": {
+        "checkpoints": [
+            {
+                "steps": 403739,
+                "file_path": "results/Ocell_Final_4Dir/IA_Enemy_Perseguidor/IA_Enemy_Perseguidor-403739.onnx",
+                "reward": 1.85666656990846,
+                "creation_time": 1776413889.621157,
+                "auxillary_file_paths": [
+                    "results/Ocell_Final_4Dir/IA_Enemy_Perseguidor/IA_Enemy_Perseguidor-403739.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 403739,
+            "file_path": "results/Ocell_Final_4Dir/IA_Enemy_Perseguidor.onnx",
+            "reward": 1.85666656990846,
+            "creation_time": 1776413889.621157,
+            "auxillary_file_paths": [
+                "results/Ocell_Final_4Dir/IA_Enemy_Perseguidor/IA_Enemy_Perseguidor-403739.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.1.0",
+        "torch_version": "2.2.2+cu121"
+    }
+}
