@@ -11,7 +11,7 @@ public class SocketNetworkManager : MonoBehaviour
  [Header("Configuració de Connexió")]
     public bool usarServidorRemot = true; 
     private string serverUrl = "http://localhost:3000";
-    private string urlServidor = "http://204.168.209.55:8080";
+    private string urlServidor = "http://204.168.209.55:3000";
     
     private string currentRoomId;
     private string playerId;
