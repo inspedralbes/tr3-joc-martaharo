@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/STATUS-EN%20DESENVOLUPAMENT-green?style=for-the-badge" alt="Status Badge">
+  <img src="https://img.shields.io/badge/STATUS-FINALITZAT-green?style=for-the-badge" alt="Status Badge">
   <img src="https://img.shields.io/badge/PLATAFORMA-PC%20/%20WEB-blue?style=for-the-badge" alt="Platform Badge">
   <img src="https://img.shields.io/badge/ENGINE-UNITY%206-black?style=for-the-badge&logo=unity" alt="Unity Badge">
 </p>
