@@ -1,0 +1,12 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/_Project/Scripts/UI/Resultats.uss?fileID=7433441132597879392&amp;guid=a9e18ffc1dfe363c18ae67c8eb2a7ef7&amp;type=3#Resultats" />
+    <ui:VisualElement name="panel-resultats" class="panel-final" style="display: none; visibility: visible;">
+        <ui:Label text="PARTIDA FINALITZADA" class="titol" style="font-size: 45px; -unity-text-align: upper-left; white-space: normal;" />
+        <ui:VisualElement style="align-items: center; margin-bottom: 30px;">
+            <ui:Label name="label-guanyador" text="GUANYADOR: -" class="estadistica" />
+            <ui:Label name="label-temps" text="TEMPS: 00:00" class="estadistica" />
+        </ui:VisualElement>
+        <ui:Button name="btn-tornar" text="TORNAR AL LOBBY" class="boto-pixel" />
+        <ui:Button name="btn-sortir" text="SORTIR AL MENÚ" class="boto-pixel" />
+    </ui:VisualElement>
+</ui:UXML>

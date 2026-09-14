@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  # Servei Backend - Node.js (Connectat a Atlas Cloud)
+  joc-backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: joc-backend
+    ports:
+      - "3000:3000" 
+    env_file:        
+      - server/.env
+    environment:
+      - MONGO_URL=mongodb+srv://Marta:Samanthaharo@projectemongo.kdmnf8d.mongodb.net/joc_multijugador?retryWrites=true&w=majority&appName=ProjecteMongo
+      - PORT=3000
+    networks:
+      - joc-network
+    restart: unless-stopped
+
+  # Proxy Invers Nginx
+  nginx:
+    image: nginx:latest
+    container_name: joc-nginx
+    ports:
+      - "80:8080" 
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - joc-backend
+    networks:
+      - joc-network
+    restart: always
+
+networks:
+  joc-network:
+    driver: bridge
