@@ -12,7 +12,7 @@
 
 <p align="center">
   <strong>Projecte DAM (Desenvolupament d'Aplicacions Multiplataforma)</strong><br>
-  Un joc cooperatiu 2D en línia on la col·laboració és la klau per a la supervivència.
+  Un joc cooperatiu 2D en línia on la col·laboració és la clau per a la supervivència.
 </p>
 
 ---
